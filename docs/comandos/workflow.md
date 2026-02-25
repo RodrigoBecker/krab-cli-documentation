@@ -1,0 +1,869 @@
+---
+sidebar_position: 10
+title: workflow — Workflows
+---
+
+# workflow — Workflows
+
+O grupo `krab workflow` e o **workflow engine** do Krab CLI: um sistema de pipelines multi-step que encadeia comandos internos do krab, comandos shell, delegacoes a agentes de IA, gates condicionais e prompts interativos em uma unica execucao orquestrada.
+
+```bash
+krab workflow --help
+```
+
+```
+Usage: krab workflow [OPTIONS] COMMAND [ARGS]...
+
+  Run multi-step SDD workflows (spec-create, implement, review, full-cycle)
+
+Commands:
+  list          List all available workflows (built-in + custom).
+  show          Show the steps of a specific workflow.
+  run           Execute a workflow pipeline.
+  new           Create a new custom workflow YAML template.
+  export        Export a built-in workflow as YAML to stdout.
+  agents-check  Check which AI agent CLIs are installed and available.
+  commands      Generate native slash commands for AI agents from krab workflows.
+```
+
+---
+
+## Conceitos Fundamentais
+
+### 5 Tipos de Step
+
+Todo workflow e uma sequencia ordenada de **steps**. Cada step tem um tipo que define como ele e executado:
+
+| Tipo | Descricao | Campo Principal | Exemplo |
+|------|-----------|-----------------|---------|
+| `krab` | Executa um comando interno do Krab CLI | `command` | `analyze risk {spec}` |
+| `shell` | Executa qualquer comando no terminal | `command` | `uv run pytest` |
+| `agent` | Delega uma tarefa a um agente de IA (Claude Code, Codex, Copilot) | `prompt` + `agent` | Implementar feature descrita na spec |
+| `gate` | Verifica uma condicao antes de prosseguir | `condition` | `file_exists:{spec}` |
+| `prompt` | Solicita input do usuario durante a execucao | `prompt` | Pergunta interativa |
+
+**Steps `krab`** preparam o prefixo `krab` automaticamente. Voce escreve apenas `analyze risk {spec}`, e o engine executa `krab analyze risk {spec}`.
+
+**Steps `shell`** executam qualquer comando. Ideal para rodar testes, builds, ou scripts customizados.
+
+**Steps `agent`** sao o diferencial: o workflow constroi um prompt estruturado com contexto do projeto + conteudo da spec e delega a execucao ao CLI do agente escolhido.
+
+**Steps `gate`** funcionam como guardas condicionais. Se a condicao falha e `on_failure` e `stop`, o pipeline inteiro para. Condicoes suportadas:
+
+- `file_exists:{path}` — verifica se um arquivo existe
+- `env:{VAR}` — verifica se uma variavel de ambiente esta definida
+- Qualquer string truthy/falsy
+
+**Steps `prompt`** pausam o pipeline e pedem input do usuario via terminal.
+
+### Variaveis de Runtime
+
+Tres variaveis sao resolvidas automaticamente em todos os campos de cada step:
+
+| Variavel | Descricao | Fonte |
+|----------|-----------|-------|
+| `{spec}` | Caminho do arquivo de spec | Flag `--spec` ou argumento do workflow |
+| `{agent}` | Nome do agente (claude, codex, copilot) | Flag `--agent` ou `default_agent` do workflow |
+| `{root}` | Diretorio raiz do projeto | `Path.cwd()` no momento da execucao |
+
+Exemplo de resolucao:
+
+```yaml
+command: "analyze risk {spec}"
+# Com --spec spec.task.auth.md resolve para:
+# krab analyze risk spec.task.auth.md
+```
+
+```yaml
+condition: "file_exists:{root}/.sdd/memory.json"
+# Com root=/home/user/projeto resolve para:
+# file_exists:/home/user/projeto/.sdd/memory.json
+```
+
+### on_failure: Controle de Falha
+
+Cada step define o que acontece quando falha:
+
+| Valor | Comportamento |
+|-------|---------------|
+| `stop` (default) | **Para o pipeline inteiro**. Steps subsequentes nao executam. |
+| `continue` | **Pula o step e segue**. O pipeline continua normalmente. |
+
+Regra pratica: steps criticos (gates, implementacao) usam `stop`. Steps informativos (analises, status) usam `continue`.
+
+### Built-in vs Custom Workflows
+
+O Krab CLI vem com **6 workflows built-in** prontos para uso. Alem disso, voce pode criar **workflows customizados ilimitados** como arquivos YAML em `.sdd/workflows/`.
+
+O engine carrega ambos automaticamente. Workflows customizados podem sobrescrever built-ins (mesmo nome = customizado tem prioridade).
+
+---
+
+## 6 Workflows Built-in
+
+| Workflow | Steps | Descricao |
+|----------|-------|-----------|
+| `spec-create` | 4 | Cria spec via template, refina com Tree-of-Thought, analisa risco de alucinacao, sincroniza agentes |
+| `implement` | 5 | Gate de existencia -> verifica risco -> sincroniza agentes -> delega implementacao ao agente -> roda testes |
+| `review` | 3 | Gate de existencia -> verifica ambiguidade -> agente revisa codigo contra a spec |
+| `full-cycle` | 8 | Ciclo completo: criar -> refinar -> risco -> otimizar -> sincronizar -> implementar -> testar -> revisar |
+| `verify` | 6 | Gate de existencia -> risco + ambiguidade + readability + entropy + refinamento |
+| `agent-init` | 3 | Verifica memory -> sincroniza todos os agentes -> mostra status |
+
+### Detalhes de Cada Built-in
+
+#### spec-create (4 steps)
+
+1. **krab**: `spec new task -n "{spec}"` — gera spec a partir do template task
+2. **krab**: `spec refine spec.task.{spec}.md` — refina com Tree-of-Thought
+3. **krab**: `analyze risk spec.task.{spec}.md` — analisa risco (on_failure: continue)
+4. **krab**: `agent sync all` — sincroniza arquivos de instrucao (on_failure: continue)
+
+#### implement (5 steps)
+
+1. **gate**: `file_exists:{spec}` — verifica se a spec existe (para se nao)
+2. **krab**: `analyze risk {spec}` — verifica risco (on_failure: continue)
+3. **krab**: `agent sync all` — sincroniza agentes (on_failure: continue)
+4. **agent**: Delega implementacao ao agente com prompt estruturado
+5. **shell**: `uv run pytest` — roda testes (on_failure: continue)
+
+#### review (3 steps)
+
+1. **gate**: `file_exists:{spec}` — verifica se a spec existe
+2. **krab**: `analyze ambiguity {spec}` — analisa ambiguidade (on_failure: continue)
+3. **agent**: Delega revisao ao agente — compara implementacao com a spec
+
+#### full-cycle (8 steps)
+
+1. **krab**: `spec new task -n "{spec}"` — cria spec
+2. **krab**: `spec refine spec.task.{spec}.md` — refina
+3. **krab**: `analyze risk spec.task.{spec}.md` — analisa risco (continue)
+4. **krab**: `optimize run spec.task.{spec}.md` — otimiza tokens (continue)
+5. **krab**: `agent sync all` — sincroniza agentes (continue)
+6. **agent**: Implementacao delegada ao agente
+7. **shell**: `uv run pytest` — testes (continue)
+8. **agent**: Revisao delegada ao agente (continue)
+
+#### verify (6 steps)
+
+1. **gate**: `file_exists:{spec}` — verifica existencia
+2. **krab**: `analyze risk {spec}` — risco (continue)
+3. **krab**: `analyze ambiguity {spec}` — ambiguidade (continue)
+4. **krab**: `analyze readability {spec}` — legibilidade (continue)
+5. **krab**: `analyze entropy {spec}` — entropia (continue)
+6. **krab**: `spec refine {spec}` — gera plano de refinamento (continue)
+
+#### agent-init (3 steps)
+
+1. **gate**: `file_exists:{root}/.sdd/memory.json` — verifica se memory existe
+2. **krab**: `agent sync all` — gera todos os arquivos de instrucao
+3. **krab**: `agent status` — mostra status dos arquivos (continue)
+
+---
+
+## Agent Executor
+
+Quando um step do tipo `agent` e executado, o Krab CLI:
+
+1. **Constroi um prompt estruturado** com:
+   - Contexto do projeto (de `.sdd/memory.json`): nome, descricao, stack, convencoes, constraints
+   - Conteudo completo do arquivo de spec (se `--spec` foi fornecido)
+   - Prompt da tarefa especifica do step
+   - Instrucoes de implementacao padrao (seguir spec, implementar cenarios Gherkin, rodar testes)
+
+2. **Delega ao CLI do agente** usando o comando nativo:
+
+| Agente | Comando Executado | Pre-requisito |
+|--------|-------------------|---------------|
+| Claude Code | `claude -p "<prompt>"` | `npm i -g @anthropic-ai/claude-code` |
+| Codex | `codex exec "<prompt>"` | `npm i -g codex` |
+| Copilot | `gh issue create --body "<prompt>" --label copilot` | `gh` CLI + auth configurado |
+
+**Timeout padrao**: 600 segundos (10 minutos) por execucao de agente.
+
+**Exemplo de prompt gerado** (simplificado):
+
+```markdown
+## Project Context
+Project: meu-app
+Description: API de autenticacao
+Architecture: hexagonal
+Tech stack: backend: Python 3.11, framework: FastAPI, db: PostgreSQL
+Conventions: naming: snake_case; test: pytest + fixtures
+Constraints: sem dependencias externas nao-auditadas
+
+## Specification (spec.task.auth.md)
+
+# Autenticacao JWT
+
+## Cenarios
+
+### Scenario: Login com credenciais validas
+Given um usuario cadastrado com email "test@x.com"
+When enviar POST /auth/login com email e senha corretos
+Then receber status 200 com access_token e refresh_token
+
+...
+
+## Task
+
+Implement the feature described in the specification.
+Follow all Gherkin scenarios as acceptance criteria.
+Create or update tests to match the scenarios.
+
+## Instructions
+
+- Follow the specification above precisely
+- Implement all Gherkin scenarios as tests
+- Respect project conventions and constraints
+- Run existing tests after changes to verify nothing breaks
+```
+
+---
+
+## Subcomandos
+
+### krab workflow list
+
+Lista todos os workflows disponiveis — tanto built-in quanto customizados.
+
+```bash
+krab workflow list
+```
+
+**Saida exemplo:**
+
+```
+╭─ Workflows — Built-in + custom ─────────────────────────────────────────╮
+
+┌─────────────┬───────┬──────────┬────────────────────────────────────────────────────────┐
+│ Name        │ Steps │ Type     │ Description                                            │
+├─────────────┼───────┼──────────┼────────────────────────────────────────────────────────┤
+│ agent-init  │     3 │ built-in │ Initialize agent instruction files: check memory, sync │
+│ full-cycle  │     8 │ built-in │ Complete SDD lifecycle from spec creation through impl  │
+│ implement   │     5 │ built-in │ Implement a feature from spec: gate, risk check, sync   │
+│ review      │     3 │ built-in │ Review implementation against spec: gate, ambiguity ch   │
+│ spec-create │     4 │ built-in │ Create a new spec from template, refine, analyze risk   │
+│ verify      │     6 │ built-in │ Run all quality checks on a spec: risk, ambiguity, rea  │
+│ deploy-prep │     4 │ custom   │ Pre-deploy validation pipeline                          │
+└─────────────┴───────┴──────────┴────────────────────────────────────────────────────────┘
+```
+
+Workflows customizados (YAML em `.sdd/workflows/`) aparecem com tipo `custom`.
+
+---
+
+### krab workflow show
+
+Mostra os steps detalhados de um workflow especifico.
+
+```bash
+krab workflow show <name>
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Obrigatorio | Descricao |
+|-----------|------|-------------|-----------|
+| `name` | argumento | sim | Nome do workflow (built-in ou custom) |
+
+**Exemplo: implement**
+
+```bash
+krab workflow show implement
+```
+
+```
+╭─ Workflow: implement — Implement a feature from spec ────────────────────╮
+
+┌───┬───────────────────┬────────┬────────────────────────────────────────────────────────┬──────────┐
+│ # │ Step              │ Type   │ Command / Prompt                                       │ On Fail  │
+├───┼───────────────────┼────────┼────────────────────────────────────────────────────────┼──────────┤
+│ 1 │ check-spec-exists │ gate   │ file_exists:{spec}                                     │ stop     │
+│ 2 │ risk-check        │ krab   │ analyze risk {spec}                                    │ continue │
+│ 3 │ sync-agents       │ krab   │ agent sync all                                         │ continue │
+│ 4 │ delegate-to-agent │ agent  │ Implement the feature described in the specificat...    │ stop     │
+│ 5 │ run-tests         │ shell  │ uv run pytest                                          │ continue │
+└───┴───────────────────┴────────┴────────────────────────────────────────────────────────┴──────────┘
+
+Default agent: claude
+```
+
+**Exemplo: full-cycle**
+
+```bash
+krab workflow show full-cycle
+```
+
+```
+╭─ Workflow: full-cycle — Complete SDD lifecycle ──────────────────────────╮
+
+┌───┬────────────────┬────────┬────────────────────────────────────────────────────────┬──────────┐
+│ # │ Step           │ Type   │ Command / Prompt                                       │ On Fail  │
+├───┼────────────────┼────────┼────────────────────────────────────────────────────────┼──────────┤
+│ 1 │ create-spec    │ krab   │ spec new task -n "{spec}"                              │ stop     │
+│ 2 │ refine-spec    │ krab   │ spec refine spec.task.{spec}.md                        │ stop     │
+│ 3 │ risk-analysis  │ krab   │ analyze risk spec.task.{spec}.md                       │ continue │
+│ 4 │ optimize-spec  │ krab   │ optimize run spec.task.{spec}.md                       │ continue │
+│ 5 │ sync-agents    │ krab   │ agent sync all                                         │ continue │
+│ 6 │ implement      │ agent  │ Implement the feature described in the specificat...    │ stop     │
+│ 7 │ run-tests      │ shell  │ uv run pytest                                          │ continue │
+│ 8 │ review         │ agent  │ Review the implementation against the specificati...    │ continue │
+└───┴────────────────┴────────┴────────────────────────────────────────────────────────┴──────────┘
+
+Default agent: claude
+```
+
+---
+
+### krab workflow run
+
+Executa um workflow pipeline. Este e o comando principal do engine.
+
+```bash
+krab workflow run <name> [OPTIONS]
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Obrigatorio | Default | Descricao |
+|-----------|------|-------------|---------|-----------|
+| `name` | argumento | sim | — | Nome do workflow |
+| `-s` / `--spec` | opcao | nao | `""` | Caminho do arquivo de spec |
+| `-a` / `--agent` | opcao | nao | `claude` | Agente: claude, codex, copilot |
+| `--dry-run` | flag | nao | `false` | Simula execucao sem executar de fato |
+
+#### Dry Run — Simulacao Completa
+
+O modo `--dry-run` mostra exatamente o que **seria** executado sem tocar em nada:
+
+```bash
+krab workflow run implement --spec spec.task.auth.md --dry-run
+```
+
+```
+╭─ Workflow: implement — DRY RUN  spec=spec.task.auth.md  agent=claude ────╮
+
+  OK  check-spec-exists: [dry-run] Would check: file_exists:spec.task.auth.md
+  OK  risk-check: [dry-run] Would run: krab analyze risk spec.task.auth.md
+  OK  sync-agents: [dry-run] Would run: krab agent sync all
+  OK  delegate-to-agent: [dry-run] Would delegate to claude: Implement the feature described...
+  OK  run-tests: [dry-run] Would run: uv run pytest
+
+  Workflow 'implement' completed: 5 passed, 0 skipped
+```
+
+Cada tipo de step mostra uma mensagem diferente no dry-run:
+
+- **krab**: `Would run: krab <command>`
+- **shell**: `Would run: <command>`
+- **agent**: `Would delegate to <agent>: <prompt preview>...`
+- **gate**: `Would check: <condition>`
+- **prompt**: `Would ask: <question>`
+
+#### O Que Acontece em Cada Tipo de Step
+
+**Step `gate`**: Avalia a condicao. Se verdadeira, retorna `OK`. Se falsa e `on_failure: stop`, para o pipeline com erro.
+
+**Step `krab`**: Localiza o binario `krab` no PATH, concatena o comando, executa como subprocesso com timeout de 300s.
+
+**Step `shell`**: Executa diretamente no shell (`shell=True`) com timeout de 300s no diretorio raiz do projeto.
+
+**Step `agent`**: Instancia `AgentExecutor`, constroi o prompt com contexto do projeto + spec, chama o CLI do agente como subprocesso com timeout de 600s.
+
+**Step `prompt`**: Exibe a mensagem e aguarda `input()` do usuario. Ctrl+C cancela o step.
+
+#### Exemplo: Implementar com Claude Code
+
+```bash
+krab workflow run implement --spec spec.task.auth.md --agent claude
+```
+
+```
+╭─ Workflow: implement — LIVE  spec=spec.task.auth.md  agent=claude ───────╮
+
+  OK    check-spec-exists: Gate passed
+  OK    risk-check: done
+  OK    sync-agents: done
+  OK    delegate-to-agent: <saida do claude code>
+  FAIL  run-tests: 2 tests failed
+
+  Workflow 'implement' completed: 4 passed, 0 skipped
+```
+
+#### Exemplo: Verificar Qualidade de uma Spec
+
+```bash
+krab workflow run verify --spec spec.task.payments.md
+```
+
+```
+╭─ Workflow: verify — LIVE  spec=spec.task.payments.md  agent=claude ──────╮
+
+  OK  check-spec-exists: Gate passed
+  OK  risk-analysis: done
+  OK  ambiguity-check: done
+  OK  readability-check: done
+  OK  entropy-analysis: done
+  OK  generate-refinement: done
+
+  Workflow 'verify' completed: 6 passed, 0 skipped
+```
+
+#### Exemplo: Ciclo Completo
+
+```bash
+krab workflow run full-cycle --spec auth-module --agent claude
+```
+
+Este comando executa os 8 steps em sequencia: cria a spec `spec.task.auth-module.md`, refina, analisa risco, otimiza tokens, sincroniza agentes, delega implementacao ao Claude Code, roda testes, e finalmente delega revisao ao Claude Code.
+
+---
+
+### krab workflow new
+
+Cria um template YAML para um workflow customizado em `.sdd/workflows/`.
+
+```bash
+krab workflow new <name> [OPTIONS]
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Obrigatorio | Descricao |
+|-----------|------|-------------|-----------|
+| `name` | argumento | sim | Nome do workflow |
+| `-d` / `--desc` | opcao | nao | Descricao do workflow |
+
+**Exemplo:**
+
+```bash
+krab workflow new deploy-prep -d "Pre-deploy validation pipeline"
+```
+
+```
+  Created workflow template: .sdd/workflows/deploy-prep.yaml
+  Edit the YAML file to customize the workflow steps.
+```
+
+**Arquivo gerado** (`.sdd/workflows/deploy-prep.yaml`):
+
+```yaml
+name: deploy-prep
+description: Pre-deploy validation pipeline
+default_agent: claude
+steps:
+- name: check-spec
+  type: gate
+  condition: file_exists:{spec}
+- name: analyze
+  type: krab
+  command: analyze risk {spec}
+  on_failure: continue
+- name: implement
+  type: agent
+  agent: '{agent}'
+  prompt: Implement the changes described in the specification.
+```
+
+**Campos do template:**
+
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| `name` | string | Nome unico do workflow |
+| `description` | string | Descricao legivel para humanos |
+| `default_agent` | string | Agente padrao (claude, codex, copilot) |
+| `steps` | lista | Sequencia ordenada de steps |
+| `steps[].name` | string | Nome unico do step dentro do workflow |
+| `steps[].type` | enum | `krab`, `shell`, `agent`, `gate`, `prompt` |
+| `steps[].command` | string | Comando para steps `krab` e `shell` |
+| `steps[].prompt` | string | Prompt para steps `agent` e `prompt` |
+| `steps[].agent` | string | Agente especifico para steps `agent` (usa `{agent}` para herdar) |
+| `steps[].condition` | string | Condicao para steps `gate` |
+| `steps[].on_failure` | enum | `stop` (default) ou `continue` |
+
+---
+
+### krab workflow export
+
+Exporta um workflow built-in como YAML para stdout. Util para usar como base para customizacao.
+
+```bash
+krab workflow export <name>
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Obrigatorio | Descricao |
+|-----------|------|-------------|-----------|
+| `name` | argumento | sim | Nome do workflow built-in |
+
+**Exemplo: Exportar implement**
+
+```bash
+krab workflow export implement
+```
+
+**Saida completa:**
+
+```yaml
+name: implement
+description: 'Implement a feature from spec: gate, risk check, sync, agent delegate,
+  test'
+default_agent: claude
+steps:
+- name: check-spec-exists
+  type: gate
+  condition: file_exists:{spec}
+- name: risk-check
+  type: krab
+  command: analyze risk {spec}
+  on_failure: continue
+- name: sync-agents
+  type: krab
+  command: agent sync all
+  on_failure: continue
+- name: delegate-to-agent
+  type: agent
+  agent: '{agent}'
+  prompt: Implement the feature described in the specification. Follow all Gherkin
+    scenarios as acceptance criteria. Create or update tests to match the scenarios.
+- name: run-tests
+  type: shell
+  command: uv run pytest
+  on_failure: continue
+```
+
+**Exemplo: Exportar full-cycle**
+
+```bash
+krab workflow export full-cycle
+```
+
+```yaml
+name: full-cycle
+description: Complete SDD lifecycle from spec creation through implementation and
+  review
+default_agent: claude
+steps:
+- name: create-spec
+  type: krab
+  command: spec new task -n "{spec}"
+- name: refine-spec
+  type: krab
+  command: spec refine spec.task.{spec}.md
+- name: risk-analysis
+  type: krab
+  command: analyze risk spec.task.{spec}.md
+  on_failure: continue
+- name: optimize-spec
+  type: krab
+  command: optimize run spec.task.{spec}.md
+  on_failure: continue
+- name: sync-agents
+  type: krab
+  command: agent sync all
+  on_failure: continue
+- name: implement
+  type: agent
+  agent: '{agent}'
+  prompt: Implement the feature described in the specification. Follow all Gherkin
+    scenarios as acceptance criteria. Create or update tests to match the scenarios.
+- name: run-tests
+  type: shell
+  command: uv run pytest
+  on_failure: continue
+- name: review
+  type: agent
+  agent: '{agent}'
+  prompt: Review the implementation against the specification. Verify all Gherkin
+    scenarios are covered. Report any deviations or missing edge cases.
+  on_failure: continue
+```
+
+**Dica**: redirecione para um arquivo e edite para criar seu workflow customizado:
+
+```bash
+krab workflow export implement > .sdd/workflows/my-implement.yaml
+```
+
+---
+
+### krab workflow agents-check
+
+Verifica quais CLIs de agentes de IA estao instalados e acessiveis no PATH.
+
+```bash
+krab workflow agents-check
+```
+
+**Saida exemplo:**
+
+```
+╭─ Agent Availability — CLI tools in PATH ─────────────────────────────────╮
+
+┌────────────────────┬──────────┬────────────┬───────────────────────────────────────────────────────┐
+│ Agent              │ Command  │ Status     │ Description                                           │
+├────────────────────┼──────────┼────────────┼───────────────────────────────────────────────────────┤
+│ Claude Code        │ claude   │ installed  │ Anthropic's Claude Code CLI — interactive coding agent │
+│ OpenAI Codex CLI   │ codex    │ not found  │ OpenAI Codex CLI — autonomous coding agent             │
+│ GitHub Copilot     │ gh       │ installed  │ GitHub Copilot — delegates via gh issue with copilot   │
+└────────────────────┴──────────┴────────────┴───────────────────────────────────────────────────────┘
+```
+
+A coluna **Status** indica:
+
+- `installed` (verde) — CLI encontrado no PATH, pronto para uso
+- `not found` (vermelho) — CLI nao encontrado, instale antes de usar
+
+---
+
+### krab workflow commands
+
+Gera **slash commands nativos** para agentes de IA a partir dos workflows do Krab. Cada workflow se transforma em comandos nativos que podem ser invocados diretamente dentro do agente.
+
+```bash
+krab workflow commands [OPTIONS]
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Default | Descricao |
+|-----------|------|---------|-----------|
+| `-a` / `--agent` | opcao | todos | Agente especifico: `claude`, `copilot` |
+| `-w` / `--workflow` | opcao | todos | Workflow especifico para gerar |
+| `--preview` | flag | false | Preview sem escrever arquivos |
+| `--clean` | flag | false | Remove todos os arquivos gerados |
+
+#### Preview — Ver Antes de Gerar
+
+```bash
+krab workflow commands --preview
+```
+
+```
+╭─ Workflow Commands — Preview (no files written) ─────────────────────────╮
+
+╭─ [claude] .claude/commands/krab.md ──────────────────────────────────────╮
+│ ---                                                                      │
+│ description: "Krab SDD workflow router — run any krab workflow by name"   │
+│ ---                                                                      │
+│                                                                          │
+│ ## User Input                                                            │
+│ ...                                                                      │
+╰──────────────────────────────────────────────────────────────────────────╯
+
+╭─ [claude] .claude/commands/krab-implement.md ────────────────────────────╮
+│ ---                                                                      │
+│ description: "Krab workflow: implement — Implement a feature from spec"   │
+│ ---                                                                      │
+│ ...                                                                      │
+╰──────────────────────────────────────────────────────────────────────────╯
+
+... (mais arquivos)
+
+  Would generate 20 file(s)
+```
+
+#### Gerar Slash Commands
+
+```bash
+krab workflow commands
+```
+
+```
+╭─ Workflow Commands — Generating native slash commands ───────────────────╮
+
+  [claude]  .claude/commands/krab.md
+  [claude]  .claude/commands/krab-spec-create.md
+  [claude]  .claude/commands/krab-implement.md
+  [claude]  .claude/commands/krab-review.md
+  [claude]  .claude/commands/krab-full-cycle.md
+  [claude]  .claude/commands/krab-verify.md
+  [claude]  .claude/commands/krab-agent-init.md
+  [copilot] .github/agents/krab.agent.md
+  [copilot] .github/prompts/krab-spec-create.prompt.md
+  [copilot] .github/prompts/krab-implement.prompt.md
+  [copilot] .github/prompts/krab-review.prompt.md
+  [copilot] .github/prompts/krab-full-cycle.prompt.md
+  [copilot] .github/prompts/krab-verify.prompt.md
+  [copilot] .github/prompts/krab-agent-init.prompt.md
+  [copilot] .github/skills/krab-spec-create/SKILL.md
+  [copilot] .github/skills/krab-implement/SKILL.md
+  [copilot] .github/skills/krab-review/SKILL.md
+  [copilot] .github/skills/krab-full-cycle/SKILL.md
+  [copilot] .github/skills/krab-verify/SKILL.md
+  [copilot] .github/skills/krab-agent-init/SKILL.md
+  Generated 20 slash command file(s)
+```
+
+#### Limpar Arquivos Gerados
+
+```bash
+krab workflow commands --clean
+```
+
+```
+╭─ Workflow Commands — Cleaning generated files ───────────────────────────╮
+
+  Removed: .claude/commands/krab.md
+  Removed: .claude/commands/krab-implement.md
+  ... (todos os arquivos krab*)
+  Cleaned 20 file(s)
+```
+
+#### Filtrar por Agente ou Workflow
+
+```bash
+# Apenas Claude Code
+krab workflow commands --agent claude
+
+# Apenas o workflow implement
+krab workflow commands --workflow implement
+
+# Combinado
+krab workflow commands --agent copilot --workflow review
+```
+
+---
+
+## Referencia YAML para Workflows Customizados
+
+### Schema Completo
+
+```yaml
+# Nome unico do workflow (usado em 'krab workflow run <name>')
+name: meu-workflow
+
+# Descricao legivel — aparece em 'krab workflow list'
+description: "Pipeline customizado para deploy"
+
+# Agente padrao quando --agent nao e especificado
+default_agent: claude  # claude | codex | copilot
+
+# Sequencia ordenada de steps
+steps:
+
+  # ──── Step tipo GATE ────
+  # Verifica uma condicao antes de prosseguir.
+  # Se falha e on_failure=stop, o pipeline para.
+  - name: verificar-spec
+    type: gate
+    condition: "file_exists:{spec}"
+    # on_failure: stop  (default — nao precisa declarar)
+
+  # ──── Step tipo KRAB ────
+  # Executa um comando interno do Krab CLI.
+  # O prefixo 'krab' e adicionado automaticamente.
+  - name: analisar-risco
+    type: krab
+    command: "analyze risk {spec}"
+    on_failure: continue
+
+  # ──── Step tipo SHELL ────
+  # Executa qualquer comando no terminal.
+  # Roda no diretorio raiz do projeto com timeout de 300s.
+  - name: rodar-testes
+    type: shell
+    command: "uv run pytest -x --tb=short"
+    on_failure: continue
+
+  # ──── Step tipo AGENT ────
+  # Delega uma tarefa a um agente de IA.
+  # O prompt e enriquecido com contexto do projeto + spec.
+  - name: implementar
+    type: agent
+    agent: "{agent}"  # herda do --agent ou default_agent
+    prompt: >
+      Implementar a feature descrita na especificacao.
+      Seguir todos os cenarios Gherkin como criterios de aceitacao.
+      Criar ou atualizar testes para cobrir os cenarios.
+
+  # ──── Step tipo PROMPT ────
+  # Solicita input do usuario durante a execucao.
+  # O pipeline pausa e aguarda resposta.
+  - name: confirmar-deploy
+    type: prompt
+    prompt: "Deploy para producao? (sim/nao)"
+
+  # ──── Gate com variavel de ambiente ────
+  - name: verificar-ci
+    type: gate
+    condition: "env:CI"  # verdadeiro se CI esta definida
+```
+
+### Exemplos de Workflows Customizados
+
+#### Pipeline de Pre-Deploy
+
+```yaml
+name: pre-deploy
+description: "Validacao completa antes de deploy"
+default_agent: claude
+steps:
+  - name: check-spec
+    type: gate
+    condition: "file_exists:{spec}"
+  - name: verify-quality
+    type: krab
+    command: "analyze risk {spec}"
+  - name: check-ambiguity
+    type: krab
+    command: "analyze ambiguity {spec}"
+    on_failure: continue
+  - name: run-all-tests
+    type: shell
+    command: "uv run pytest --cov=src/ --cov-report=term-missing"
+  - name: lint-check
+    type: shell
+    command: "uv run ruff check src/ tests/"
+  - name: confirm
+    type: prompt
+    prompt: "Todos os checks passaram. Prosseguir com deploy?"
+```
+
+#### Review com Multiplos Agentes
+
+```yaml
+name: multi-review
+description: "Review por dois agentes diferentes para cross-check"
+default_agent: claude
+steps:
+  - name: check-spec
+    type: gate
+    condition: "file_exists:{spec}"
+  - name: review-claude
+    type: agent
+    agent: claude
+    prompt: "Review the implementation against the spec. Focus on correctness."
+  - name: review-codex
+    type: agent
+    agent: codex
+    prompt: "Review the implementation against the spec. Focus on edge cases."
+    on_failure: continue
+```
+
+#### Pipeline de Documentacao
+
+```yaml
+name: doc-update
+description: "Atualizar documentacao apos mudancas"
+default_agent: claude
+steps:
+  - name: check-memory
+    type: gate
+    condition: "file_exists:{root}/.sdd/memory.json"
+  - name: sync-agents
+    type: krab
+    command: "agent sync all"
+  - name: generate-commands
+    type: krab
+    command: "workflow commands"
+    on_failure: continue
+  - name: update-docs
+    type: agent
+    agent: "{agent}"
+    prompt: >
+      Review all agent instruction files (CLAUDE.md, AGENTS.md, .github/copilot-instructions.md)
+      and update them to reflect the current state of the project based on .sdd/memory.json.
+```

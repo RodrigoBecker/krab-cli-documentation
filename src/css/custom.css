@@ -1,0 +1,65 @@
+/**
+ * Krab CLI Documentation — Custom theme
+ */
+
+:root {
+  --ifm-color-primary: #e74c3c;
+  --ifm-color-primary-dark: #d62c1a;
+  --ifm-color-primary-darker: #c92918;
+  --ifm-color-primary-darkest: #a52214;
+  --ifm-color-primary-light: #ea6153;
+  --ifm-color-primary-lighter: #ec6d60;
+  --ifm-color-primary-lightest: #f09080;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ifm-heading-font-weight: 700;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #ff6b6b;
+  --ifm-color-primary-dark: #ff4848;
+  --ifm-color-primary-darker: #ff3636;
+  --ifm-color-primary-darkest: #ff0101;
+  --ifm-color-primary-light: #ff8e8e;
+  --ifm-color-primary-lighter: #ffa0a0;
+  --ifm-color-primary-lightest: #ffd5d5;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar styling */
+.menu__link {
+  font-size: 0.95rem;
+}
+
+.menu__list-item-collapsible .menu__link {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+}
+
+/* Table styling */
+table {
+  display: table;
+  width: 100%;
+}
+
+table th {
+  background-color: var(--ifm-color-primary-lightest);
+  color: var(--ifm-font-color-base);
+}
+
+[data-theme='dark'] table th {
+  background-color: rgba(255, 107, 107, 0.15);
+}
+
+/* Code blocks */
+.prism-code {
+  font-size: 0.9rem;
+}
+
+/* Admonition styling */
+.admonition {
+  margin-bottom: 1.5rem;
+}
