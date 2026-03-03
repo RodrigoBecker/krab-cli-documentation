@@ -637,6 +637,242 @@ Use `krab spec refine` para identificar placeholders nao preenchidos e receber s
 
 ---
 
+## krab spec import
+
+Importa specs de um repositorio Git remoto (publico ou privado) para o projeto local. Aceita URLs Git diretas, caminhos locais ou aliases de registry.
+
+### Sintaxe
+
+```bash
+krab spec import <source> [-b <branch>] [-p <path>] [-a] [-f] [-o <output>]
+```
+
+### Parametros
+
+| Parametro | Tipo | Obrigatorio | Default | Descricao |
+|-----------|------|-------------|---------|-----------|
+| `source` | `string` | Sim | — | URL Git, caminho local ou alias de registry |
+| `-b` / `--branch` | `string` | Nao | Branch padrao do repo | Branch, tag ou ref para clonar |
+| `-p` / `--path` | `string` | Nao | Auto-detect | Subdiretorio dentro do repo para buscar specs |
+| `-a` / `--all` | `bool` | Nao | `false` | Importar todas as specs sem prompt interativo |
+| `-f` / `--force` | `bool` | Nao | `false` | Sobrescrever specs existentes localmente |
+| `-o` / `--output` | `Path` | Nao | `.sdd/specs/` | Diretorio de destino para as specs importadas |
+
+### Como Funciona
+
+1. **Resolve a source** — Se nao e uma URL nem um path local, busca como alias em `.sdd/registries.json`
+2. **Clona o repositorio** — `git clone --depth 1` (shallow clone) para um diretorio temporario. Usa as credenciais Git do sistema (SSH keys, tokens) para repos privados
+3. **Busca specs** — Procura arquivos `spec.*.md`:
+   - Se `--path` fornecido: busca somente naquele subdiretorio
+   - Se registry com `path` padrao: usa esse path
+   - Senao: tenta `.sdd/specs/` primeiro, fallback para scan recursivo no repo inteiro
+4. **Exibe specs encontradas** — Tabela Rich com nome, path relativo e tamanho
+5. **Selecao interativa** — Se `--all` nao definido, solicita quais specs importar (ex: `1,3` ou `all`)
+6. **Verifica conflitos** — Specs que ja existem localmente sao puladas (use `--force` para sobrescrever)
+7. **Copia para `.sdd/specs/`** — (ou `--output`) e registra no historico de specs
+
+### Exemplos
+
+#### Import direto de URL (todas as specs)
+
+```bash
+krab spec import https://github.com/org/spec-templates --all
+```
+
+**Saida:**
+
+```
+╭────────────────────────────────────────────────────╮
+│  Spec Import                                       │
+│  https://github.com/org/spec-templates             │
+╰────────────────────────────────────────────────────╯
+ℹ Repositorio clonado: https://github.com/org/spec-templates
+
+┌───┬─────────────────────────────────┬────────────┬──────────┐
+│ # │ Spec                            │ Path       │ Size     │
+├───┼─────────────────────────────────┼────────────┼──────────┤
+│ 1 │ spec.task.auth-login.md         │ .sdd/specs │ 2.4 KB   │
+│ 2 │ spec.task.payment-flow.md       │ .sdd/specs │ 3.1 KB   │
+│ 3 │ spec.architecture.api-gateway.md│ .sdd/specs │ 5.2 KB   │
+└───┴─────────────────────────────────┴────────────┴──────────┘
+
+✓ Importadas 3 specs de https://github.com/org/spec-templates
+ℹ spec.task.auth-login.md -> .sdd/specs/spec.task.auth-login.md
+ℹ spec.task.payment-flow.md -> .sdd/specs/spec.task.payment-flow.md
+ℹ spec.architecture.api-gateway.md -> .sdd/specs/spec.architecture.api-gateway.md
+```
+
+#### Import interativo com selecao
+
+```bash
+krab spec import https://github.com/org/spec-templates
+```
+
+```
+Importar quais specs? (1-3, separados por virgula, ou 'all'): 1,3
+✓ Importadas 2 specs de https://github.com/org/spec-templates
+```
+
+#### Import via alias de registry
+
+```bash
+# Primeiro: registrar o repo
+krab spec registry add team-specs https://github.com/org/spec-templates --path .sdd/specs
+
+# Depois: importar usando o alias
+krab spec import team-specs --all
+```
+
+#### Import de branch especifica
+
+```bash
+krab spec import https://github.com/org/specs --branch v2 --path specs/
+```
+
+#### Import com sobrescrita
+
+```bash
+krab spec import team-specs --all --force
+```
+
+#### Import para diretorio customizado
+
+```bash
+krab spec import team-specs --all -o ./imported-specs/
+```
+
+### Tratamento de Conflitos
+
+Se uma spec ja existe no destino e `--force` nao esta ativo:
+
+```
+⚠ spec.task.auth-login.md ja existe. Use --force para sobrescrever.
+✓ Importadas 2 specs de team-specs
+⚠ 1 specs ignoradas (ja existem)
+```
+
+A spec existente **nao** e modificada. As demais specs sao importadas normalmente.
+
+### Repos Privados
+
+O import usa `git clone` que respeita as credenciais ja configuradas no sistema:
+
+- **SSH**: Se `git@github.com:...` funciona no terminal, funciona no import
+- **HTTPS com token**: Se `git clone https://...` funciona com credential helper configurado, funciona no import
+- **Erro de auth**: A mensagem de erro do Git e exibida diretamente para facilitar o diagnostico
+
+---
+
+## krab spec registry
+
+Gerencia aliases reutilizaveis para repositorios Git remotos que contem specs. Os registries sao salvos em `.sdd/registries.json`.
+
+### Prerequisito
+
+O projeto deve estar inicializado (`krab memory init`) para usar o registry.
+
+### krab spec registry add
+
+Adiciona ou atualiza um registry.
+
+```bash
+krab spec registry add <name> <url> [--path/-p <path>] [--branch/-b <branch>]
+```
+
+| Parametro | Tipo | Obrigatorio | Default | Descricao |
+|-----------|------|-------------|---------|-----------|
+| `name` | `string` | Sim | — | Alias para este registry |
+| `url` | `string` | Sim | — | URL do repositorio Git |
+| `-p` / `--path` | `string` | Nao | `""` | Subdiretorio padrao para buscar specs |
+| `-b` / `--branch` | `string` | Nao | `""` | Branch/tag padrao |
+
+**Exemplo:**
+
+```bash
+krab spec registry add team-specs https://github.com/org/sdd-templates --path .sdd/specs --branch main
+```
+
+```
+✓ Registry 'team-specs' adicionado
+ℹ URL: https://github.com/org/sdd-templates
+ℹ Path: .sdd/specs
+ℹ Branch: main
+```
+
+Se o alias ja existe, o registry e **atualizado** e a mensagem exibe `atualizado` no lugar de `adicionado`.
+
+### krab spec registry remove
+
+Remove um registry pelo alias.
+
+```bash
+krab spec registry remove <name>
+```
+
+**Exemplo:**
+
+```bash
+krab spec registry remove team-specs
+```
+
+```
+✓ Registry 'team-specs' removido
+```
+
+Se o alias nao existe, exibe erro:
+
+```
+✗ Registry 'team-specs' nao encontrado
+```
+
+### krab spec registry list
+
+Lista todos os registries cadastrados.
+
+```bash
+krab spec registry list
+```
+
+**Exemplo:**
+
+```
+╭────────────────────────────────────────╮
+│  Spec Registries  2 registries         │
+╰────────────────────────────────────────╯
+
+┌──────────────┬─────────────────────────────────────────┬────────────┬────────┐
+│ Name         │ URL                                     │ Path       │ Branch │
+├──────────────┼─────────────────────────────────────────┼────────────┼────────┤
+│ team-specs   │ https://github.com/org/sdd-templates    │ .sdd/specs │ main   │
+│ community    │ https://github.com/krab/spec-library    │ -          │ -      │
+└──────────────┴─────────────────────────────────────────┴────────────┴────────┘
+```
+
+Se nenhum registry existe:
+
+```
+ℹ Nenhum registry cadastrado. Use `krab spec registry add` para adicionar.
+```
+
+### Modelo de Dados (registries.json)
+
+```json
+{
+  "team-specs": {
+    "url": "https://github.com/org/sdd-templates",
+    "path": ".sdd/specs",
+    "branch": "main",
+    "added_at": "2026-03-03T10:30:00+00:00"
+  },
+  "community": {
+    "url": "https://github.com/krab/spec-library",
+    "added_at": "2026-03-03T11:00:00+00:00"
+  }
+}
+```
+
+---
+
 ## Referencia Rapida
 
 ```bash
@@ -663,4 +899,13 @@ krab spec list
 
 # Especificar arquivo de saida customizado
 krab spec new task -n "Login" -o specs/features/login.md
+
+# Importar specs de repositorio remoto
+krab spec import https://github.com/org/spec-templates --all
+krab spec import team-specs --branch v2 --force
+
+# Gerenciar registries
+krab spec registry add team-specs https://github.com/org/specs --path .sdd/specs
+krab spec registry list
+krab spec registry remove team-specs
 ```

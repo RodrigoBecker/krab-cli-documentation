@@ -868,6 +868,8 @@ krab workflow run implement --spec spec.task.carrinho-de-compras.md --agent clau
 
 Agora que voce completou o Quick Start, explore estas areas:
 
+- **Importar specs** — Importe specs de repositorios Git remotos com `krab spec import`
+- **Spec registry** — Salve aliases de repos com `krab spec registry add` para reutilizar
 - **Workflows customizados** — Crie seus proprios pipelines com `krab workflow new`
 - **Analise em batch** — Processe todas as specs de uma vez com `krab analyze batch`
 - **Busca em corpus** — Use `krab search bm25` para encontrar specs por relevancia

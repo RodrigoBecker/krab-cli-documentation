@@ -28,6 +28,7 @@ Em vez de copiar e colar specs manualmente, o Krab CLI oferece:
 - **Analise profunda** da qualidade de specs com 25 algoritmos especializados
 - **Otimizacao automatica** para reduzir o consumo de tokens sem perda de informacao
 - **Geracao de specs** a partir de templates padronizados (task, architecture, plan, skill, refining)
+- **Importacao de specs** de repositorios Git remotos (publicos ou privados) com registry de aliases
 - **Integracao nativa** com agentes de IA via slash commands e arquivos de instrucao
 - **Workflows completos** que encadeiam criacao, analise, otimizacao e delegacao para agentes
 
@@ -204,7 +205,7 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 | **`krab analyze`** | `tokens`, `quality`, `compare`, `freq`, `entropy`, `readability`, `ambiguity`, `substrings`, `risk`, `chunking`, `keywords`, `batch` | Analise completa de qualidade e metricas |
 | **`krab search`** | `bm25`, `duplicates`, `budget` | Busca, indexacao e otimizacao de budget |
 | **`krab diff`** | `versions`, `sections` | Delta encoding entre versoes de specs |
-| **`krab spec`** | `new`, `refine`, `list` | Geracao de specs via templates |
+| **`krab spec`** | `new`, `refine`, `list`, `import`, `registry` | Geracao, importacao e gerenciamento de specs |
 | **`krab memory`** | `init`, `show`, `set`, `skills`, `add-skill`, `remove-skill`, `history` | Memoria persistente do projeto |
 | **`krab agent`** | `sync`, `preview`, `status`, `diff` | Instrucoes para agentes de IA |
 | **`krab cache`** | `stats`, `clear` | Gerenciamento de cache de analise |
@@ -258,7 +259,7 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 | **Licenca** | MIT |
 | **Stack** | Typer, Rich, RapidFuzz, tiktoken, PyYAML |
 | **Build** | Hatchling |
-| **Testes** | pytest (377 testes) |
+| **Testes** | pytest (407 testes) |
 | **Lint** | Ruff |
 | **Autor** | Becker |
 

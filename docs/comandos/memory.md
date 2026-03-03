@@ -29,12 +29,17 @@ Ao inicializar a memoria, o Krab cria a seguinte estrutura:
 
 ```
 .sdd/
-├── memory.json      # Contexto principal do projeto
-├── skills.json      # Skills e tecnologias do projeto
-├── history.json     # Historico de geracao de specs
-└── cache/           # Cache de resultados de analise (criado sob demanda)
-    ├── a1b2c3d4e5f6.json
-    └── ...
+├── memory.json        # Contexto principal do projeto
+├── skills.json        # Skills e tecnologias do projeto
+├── history.json       # Historico de geracao e importacao de specs
+├── registries.json    # Aliases de repos Git remotos (criado via krab spec registry add)
+├── specs/             # Specs geradas e importadas (criado sob demanda)
+│   └── spec.task.*.md
+├── cache/             # Cache de resultados de analise (criado sob demanda)
+│   ├── a1b2c3d4e5f6.json
+│   └── ...
+└── workflows/         # Workflows customizados YAML (criado via krab workflow new)
+    └── *.yaml
 ```
 
 ### `memory.json`
@@ -47,7 +52,11 @@ Lista de tecnologias, frameworks, padroes e ferramentas que o projeto utiliza. C
 
 ### `history.json`
 
-Registro cronologico de todas as specs geradas pelo `krab spec new`, incluindo timestamp, tipo de template, nome e arquivo de saida. Util para rastrear a evolucao das especificacoes do projeto.
+Registro cronologico de todas as specs geradas (`krab spec new`) e importadas (`krab spec import`), incluindo timestamp, tipo de template, nome, arquivo de saida e fonte de importacao. Util para rastrear a evolucao das especificacoes do projeto.
+
+### `registries.json`
+
+Aliases reutilizaveis para repositorios Git remotos que contem specs. Criado automaticamente ao executar `krab spec registry add`. Cada entrada armazena nome, URL, subdiretorio padrao e branch. Veja [`krab spec registry`](./spec#krab-spec-registry) para detalhes.
 
 ---
 

@@ -128,7 +128,7 @@ O `uv sync` faz tudo automaticamente:
 Para rodar testes e lint no modo de desenvolvimento:
 
 ```bash
-# Testes (377 testes)
+# Testes (407 testes)
 uv run pytest
 
 # Lint

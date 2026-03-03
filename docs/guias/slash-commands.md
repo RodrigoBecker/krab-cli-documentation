@@ -173,7 +173,7 @@ Implement a feature from spec: gate, risk check, sync, agent delegate, test
    - On failure: continue to next step
 3. **Run**: `krab agent sync all`
    - On failure: continue to next step
-4. **Agent** ({agent}) — **Implement**:
+4. **Agent** (`{agent}`) — **Implement**:
    > Implement the feature described in the specification. Follow all Gherkin scenarios as acceptance criteria. Create or update tests to match the scenarios.
 
    **Instructions for the agent:**
@@ -339,7 +339,7 @@ Implement a feature from spec: gate, risk check, sync, agent delegate, test
    - On failure: continue to next step
 3. **Run**: `krab agent sync all`
    - On failure: continue to next step
-4. **Agent** ({agent}) — **Implement**:
+4. **Agent** (`{agent}`) — **Implement**:
    > Implement the feature described in the specification. Follow all Gherkin scenarios as acceptance criteria. Create or update tests to match the scenarios.
 
    **Instructions for the agent:**
@@ -402,7 +402,7 @@ description: "Implement a feature from spec: gate, risk check, sync, agent deleg
    - On failure: continue to next step
 3. **Run**: `krab agent sync all`
    - On failure: continue to next step
-4. **Agent** ({agent}) — **Implement**:
+4. **Agent** (`{agent}`) — **Implement**:
    > Implement the feature described in the specification. Follow all Gherkin scenarios as acceptance criteria. Create or update tests to match the scenarios.
 
    **Instructions for the agent:**
@@ -438,7 +438,7 @@ O workflow `spec-create` e o `full-cycle` incluem um step especial chamado `enri
 **Exemplo de step enrich no slash command gerado:**
 
 ```markdown
-2. **Agent** ({agent}) — **Enrich spec** (rewrite in-place):
+2. **Agent** (`{agent}`) — **Enrich spec** (rewrite in-place):
    > Leia o arquivo .sdd/specs/spec.task.{spec}.md que acabou de ser criado.
    > Ele contem um template com placeholders genericos. Reescreva o arquivo
    > IN-PLACE substituindo TODOS os placeholders com conteudo real e especifico

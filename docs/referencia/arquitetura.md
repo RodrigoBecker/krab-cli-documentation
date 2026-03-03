@@ -21,7 +21,7 @@ Este documento detalha a arquitetura interna do Krab CLI: estrutura de diretorio
 | YAML | PyYAML | >= 6.0.1 | Serializacao de workflows e configuracoes |
 | CLI Base | Click | >= 8.1.0 | Dependencia do Typer |
 | Build System | Hatchling | — | Build backend para pyproject.toml |
-| Testes | pytest | — | Framework de testes (20 arquivos, 377 testes) |
+| Testes | pytest | — | Framework de testes (20 arquivos, 407 testes) |
 | Linter/Formatter | Ruff | — | Check + format (target Python 3.11) |
 
 ---
@@ -72,7 +72,7 @@ src/krab_cli/
 │   └── task.py              # Template spec.task
 │
 ├── memory/                  # Persistencia de contexto do projeto
-│   └── __init__.py          # MemoryStore, ProjectMemory, ProjectSkill (.sdd/)
+│   └── __init__.py          # MemoryStore, ProjectMemory, ProjectSkill, SpecRegistry (.sdd/)
 │
 ├── agents/                  # Geracao de instruction files para agentes
 │   └── __init__.py          # AgentGenerator ABC, registry, Claude/Copilot/Codex generators
@@ -121,10 +121,11 @@ Sistema de templates para geracao de specs. Cada tipo de template e uma classe q
 
 #### `memory/` — Persistencia
 
-Gerencia o diretorio `.sdd/` com tres arquivos JSON:
+Gerencia o diretorio `.sdd/` com quatro arquivos JSON:
 - `memory.json` — contexto do projeto (nome, stack, convencoes, constraints)
 - `skills.json` — skills do projeto (linguagens, frameworks, tools)
-- `history.json` — historico de geracao de specs
+- `history.json` — historico de geracao e importacao de specs
+- `registries.json` — aliases de repositorios Git remotos para importacao de specs
 
 #### `agents/` — Geracao de Instruction Files
 
@@ -371,13 +372,17 @@ A memory layer armazena o **contexto persistente do projeto** — informacoes qu
 
 ```
 .sdd/
-├── memory.json     # Contexto do projeto (ProjectMemory)
-├── skills.json     # Skills registradas (list[ProjectSkill])
-├── history.json    # Historico de geracao de specs
-├── cache/          # Cache de analises (veja secao acima)
+├── memory.json       # Contexto do projeto (ProjectMemory)
+├── skills.json       # Skills registradas (list[ProjectSkill])
+├── history.json      # Historico de geracao de specs
+├── registries.json   # Aliases de repos Git remotos (SpecRegistry)
+├── specs/            # Specs geradas e importadas
+│   ├── spec.task.auth-login.md
+│   └── spec.architecture.api.md
+├── cache/            # Cache de analises (veja secao acima)
 │   ├── a1b2c3....json
 │   └── d4e5f6....json
-└── workflows/      # Workflows customizados (YAML)
+└── workflows/        # Workflows customizados (YAML)
     ├── deploy-prep.yaml
     └── hotfix.yaml
 ```
@@ -628,7 +633,7 @@ AgentContext(project_name, tech_stack, conventions, spec_files, commands, ...)
 
 ## Estrutura de Testes
 
-**20 arquivos de teste** com **377 testes** no total:
+**20 arquivos de teste** com **407 testes** no total:
 
 ```
 tests/
@@ -637,7 +642,7 @@ tests/
 ├── test_cache.py            # Cache layer (get, put, clear, stats, invalidation)
 ├── test_cli.py              # Testes de CLI integration (Typer CliRunner)
 ├── test_cli_new.py          # Testes do 'krab spec new' e templates
-├── test_cli_spec.py         # Testes de spec commands
+├── test_cli_spec.py         # Testes de spec, memory, import e registry commands
 ├── test_commands.py         # Slash command generator (Claude + Copilot)
 ├── test_converters.py       # Conversao md/json/yaml
 ├── test_fuzzy.py            # Fuzzy matching (ratio, partial, token_sort, weighted)
