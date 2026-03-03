@@ -103,21 +103,26 @@ O engine carrega ambos automaticamente. Workflows customizados podem sobrescreve
 
 | Workflow | Steps | Descricao |
 |----------|-------|-----------|
-| `spec-create` | 4 | Cria spec via template, refina com Tree-of-Thought, analisa risco de alucinacao, sincroniza agentes |
+| `spec-create` | 5 | Cria spec via template, enriquece com agente IA, refina com Tree-of-Thought, analisa risco de alucinacao, sincroniza agentes |
 | `implement` | 5 | Gate de existencia -> verifica risco -> sincroniza agentes -> delega implementacao ao agente -> roda testes |
 | `review` | 3 | Gate de existencia -> verifica ambiguidade -> agente revisa codigo contra a spec |
-| `full-cycle` | 8 | Ciclo completo: criar -> refinar -> risco -> otimizar -> sincronizar -> implementar -> testar -> revisar |
+| `full-cycle` | 9 | Ciclo completo: criar -> enriquecer -> refinar -> risco -> otimizar -> sincronizar -> implementar -> testar -> revisar |
 | `verify` | 6 | Gate de existencia -> risco + ambiguidade + readability + entropy + refinamento |
 | `agent-init` | 3 | Verifica memory -> sincroniza todos os agentes -> mostra status |
 
 ### Detalhes de Cada Built-in
 
-#### spec-create (4 steps)
+#### spec-create (5 steps)
 
 1. **krab**: `spec new task -n "{spec}"` — gera spec a partir do template task
-2. **krab**: `spec refine spec.task.{spec}.md` — refina com Tree-of-Thought
-3. **krab**: `analyze risk spec.task.{spec}.md` — analisa risco (on_failure: continue)
-4. **krab**: `agent sync all` — sincroniza arquivos de instrucao (on_failure: continue)
+2. **agent** (enrich): Le a spec recem-criada e reescreve IN-PLACE substituindo todos os placeholders por conteudo real — cenarios Gherkin concretos, criterios de aceitacao, notas tecnicas relevantes para a stack do projeto (escrita em pt-BR)
+3. **krab**: `spec refine .sdd/specs/spec.task.{spec}.md` — refina com Tree-of-Thought
+4. **krab**: `analyze risk .sdd/specs/spec.task.{spec}.md` — analisa risco (on_failure: continue)
+5. **krab**: `agent sync all` — sincroniza arquivos de instrucao (on_failure: continue)
+
+:::info Step Enrich
+O step `enrich-spec` e o diferencial do workflow `spec-create`. Enquanto o template gera uma spec com placeholders genericos (`<!-- ... -->`, `<tipo de usuario>`, `<acao desejada>`), o agente de IA reescreve o arquivo completo com conteudo real e especifico para a feature. O agente usa o contexto do projeto (tech_stack, convencoes, constraints) de `.sdd/memory.json` para gerar conteudo relevante.
+:::
 
 #### implement (5 steps)
 
@@ -133,16 +138,17 @@ O engine carrega ambos automaticamente. Workflows customizados podem sobrescreve
 2. **krab**: `analyze ambiguity {spec}` — analisa ambiguidade (on_failure: continue)
 3. **agent**: Delega revisao ao agente — compara implementacao com a spec
 
-#### full-cycle (8 steps)
+#### full-cycle (9 steps)
 
 1. **krab**: `spec new task -n "{spec}"` — cria spec
-2. **krab**: `spec refine spec.task.{spec}.md` — refina
-3. **krab**: `analyze risk spec.task.{spec}.md` — analisa risco (continue)
-4. **krab**: `optimize run spec.task.{spec}.md` — otimiza tokens (continue)
-5. **krab**: `agent sync all` — sincroniza agentes (continue)
-6. **agent**: Implementacao delegada ao agente
-7. **shell**: `uv run pytest` — testes (continue)
-8. **agent**: Revisao delegada ao agente (continue)
+2. **agent** (enrich): Enriquece a spec recem-criada, substituindo placeholders por conteudo real (cenarios Gherkin, criterios de aceitacao, notas tecnicas em pt-BR)
+3. **krab**: `spec refine .sdd/specs/spec.task.{spec}.md` — refina com Tree-of-Thought
+4. **krab**: `analyze risk .sdd/specs/spec.task.{spec}.md` — analisa risco (continue)
+5. **krab**: `optimize run .sdd/specs/spec.task.{spec}.md` — otimiza tokens (continue)
+6. **krab**: `agent sync all` — sincroniza agentes (continue)
+7. **agent**: Implementacao delegada ao agente
+8. **shell**: `uv run pytest` — testes (continue)
+9. **agent**: Revisao delegada ao agente (continue)
 
 #### verify (6 steps)
 
@@ -165,13 +171,17 @@ O engine carrega ambos automaticamente. Workflows customizados podem sobrescreve
 
 Quando um step do tipo `agent` e executado, o Krab CLI:
 
-1. **Constroi um prompt estruturado** com:
+1. **Detecta o modo** do step:
+   - Se o prompt comeca com `[mode:enrich]`, o modo e `enrich` (reescrita de spec)
+   - Caso contrario, o modo e `implement` (implementacao padrao)
+
+2. **Constroi um prompt estruturado** com:
    - Contexto do projeto (de `.sdd/memory.json`): nome, descricao, stack, convencoes, constraints
    - Conteudo completo do arquivo de spec (se `--spec` foi fornecido)
    - Prompt da tarefa especifica do step
-   - Instrucoes de implementacao padrao (seguir spec, implementar cenarios Gherkin, rodar testes)
+   - Instrucoes dependentes do modo (veja abaixo)
 
-2. **Delega ao CLI do agente** usando o comando nativo:
+3. **Delega ao CLI do agente** usando o comando nativo:
 
 | Agente | Comando Executado | Pre-requisito |
 |--------|-------------------|---------------|
@@ -181,7 +191,32 @@ Quando um step do tipo `agent` e executado, o Krab CLI:
 
 **Timeout padrao**: 600 segundos (10 minutos) por execucao de agente.
 
-**Exemplo de prompt gerado** (simplificado):
+### Modos de Execucao do Agent
+
+O Agent Executor suporta dois modos que alteram as instrucoes finais do prompt:
+
+#### Modo `implement` (padrao)
+
+Instrucoes geradas:
+- Follow the specification above precisely
+- Implement all Gherkin scenarios as tests
+- Respect project conventions and constraints
+- Run existing tests after changes to verify nothing breaks
+
+#### Modo `enrich`
+
+Ativado automaticamente quando o prompt do step comeca com `[mode:enrich]`. Este modo e usado pelo step `enrich-spec` nos workflows `spec-create` e `full-cycle`.
+
+Instrucoes geradas (em pt-BR):
+- Leia o arquivo spec indicado
+- Reescreva o arquivo IN-PLACE mantendo a estrutura de headings
+- Substitua TODOS os placeholders (`<!-- ... -->`, `<tipo de usuario>`, `<acao desejada>`, etc.) por conteudo real e especifico
+- Use o contexto do projeto (tech_stack, conventions) para gerar conteudo relevante
+- Escreva cenarios Gherkin concretos para a feature descrita
+- Gere criterios de aceitacao reais e notas tecnicas relevantes
+- Escreva em pt-BR
+
+**Exemplo de prompt gerado — modo implement** (simplificado):
 
 ```markdown
 ## Project Context
@@ -240,10 +275,10 @@ krab workflow list
 │ Name        │ Steps │ Type     │ Description                                            │
 ├─────────────┼───────┼──────────┼────────────────────────────────────────────────────────┤
 │ agent-init  │     3 │ built-in │ Initialize agent instruction files: check memory, sync │
-│ full-cycle  │     8 │ built-in │ Complete SDD lifecycle from spec creation through impl  │
+│ full-cycle  │     9 │ built-in │ Complete SDD lifecycle from spec creation through impl  │
 │ implement   │     5 │ built-in │ Implement a feature from spec: gate, risk check, sync   │
 │ review      │     3 │ built-in │ Review implementation against spec: gate, ambiguity ch   │
-│ spec-create │     4 │ built-in │ Create a new spec from template, refine, analyze risk   │
+│ spec-create │     5 │ built-in │ Create a new spec from template, enrich, refine, risk   │
 │ verify      │     6 │ built-in │ Run all quality checks on a spec: risk, ambiguity, rea  │
 │ deploy-prep │     4 │ custom   │ Pre-deploy validation pipeline                          │
 └─────────────┴───────┴──────────┴────────────────────────────────────────────────────────┘
@@ -302,13 +337,14 @@ krab workflow show full-cycle
 │ # │ Step           │ Type   │ Command / Prompt                                       │ On Fail  │
 ├───┼────────────────┼────────┼────────────────────────────────────────────────────────┼──────────┤
 │ 1 │ create-spec    │ krab   │ spec new task -n "{spec}"                              │ stop     │
-│ 2 │ refine-spec    │ krab   │ spec refine spec.task.{spec}.md                        │ stop     │
-│ 3 │ risk-analysis  │ krab   │ analyze risk spec.task.{spec}.md                       │ continue │
-│ 4 │ optimize-spec  │ krab   │ optimize run spec.task.{spec}.md                       │ continue │
-│ 5 │ sync-agents    │ krab   │ agent sync all                                         │ continue │
-│ 6 │ implement      │ agent  │ Implement the feature described in the specificat...    │ stop     │
-│ 7 │ run-tests      │ shell  │ uv run pytest                                          │ continue │
-│ 8 │ review         │ agent  │ Review the implementation against the specificati...    │ continue │
+│ 2 │ enrich-spec    │ agent  │ [enrich] Rewrite spec with real content                │ stop     │
+│ 3 │ refine-spec    │ krab   │ spec refine .sdd/specs/spec.task.{spec}.md             │ stop     │
+│ 4 │ risk-analysis  │ krab   │ analyze risk .sdd/specs/spec.task.{spec}.md            │ continue │
+│ 5 │ optimize-spec  │ krab   │ optimize run .sdd/specs/spec.task.{spec}.md            │ continue │
+│ 6 │ sync-agents    │ krab   │ agent sync all                                         │ continue │
+│ 7 │ implement      │ agent  │ Implement the feature described in the specificat...    │ stop     │
+│ 8 │ run-tests      │ shell  │ uv run pytest                                          │ continue │
+│ 9 │ review         │ agent  │ Review the implementation against the specificati...    │ continue │
 └───┴────────────────┴────────┴────────────────────────────────────────────────────────┴──────────┘
 
 Default agent: claude
@@ -416,7 +452,7 @@ krab workflow run verify --spec spec.task.payments.md
 krab workflow run full-cycle --spec auth-module --agent claude
 ```
 
-Este comando executa os 8 steps em sequencia: cria a spec `spec.task.auth-module.md`, refina, analisa risco, otimiza tokens, sincroniza agentes, delega implementacao ao Claude Code, roda testes, e finalmente delega revisao ao Claude Code.
+Este comando executa os 9 steps em sequencia: cria a spec `spec.task.auth-module.md`, enriquece a spec com conteudo real via agente IA (substituindo placeholders por cenarios Gherkin concretos e criterios de aceitacao), refina com Tree-of-Thought, analisa risco, otimiza tokens, sincroniza agentes, delega implementacao ao Claude Code, roda testes, e finalmente delega revisao ao Claude Code.
 
 ---
 
@@ -549,16 +585,22 @@ steps:
 - name: create-spec
   type: krab
   command: spec new task -n "{spec}"
+- name: enrich-spec
+  type: agent
+  agent: '{agent}'
+  prompt: '[mode:enrich]Leia o arquivo .sdd/specs/spec.task.{spec}.md que acabou
+    de ser criado. Reescreva o arquivo IN-PLACE substituindo TODOS os placeholders
+    com conteudo real e especifico para a feature.'
 - name: refine-spec
   type: krab
-  command: spec refine spec.task.{spec}.md
+  command: spec refine .sdd/specs/spec.task.{spec}.md
 - name: risk-analysis
   type: krab
-  command: analyze risk spec.task.{spec}.md
+  command: analyze risk .sdd/specs/spec.task.{spec}.md
   on_failure: continue
 - name: optimize-spec
   type: krab
-  command: optimize run spec.task.{spec}.md
+  command: optimize run .sdd/specs/spec.task.{spec}.md
   on_failure: continue
 - name: sync-agents
   type: krab

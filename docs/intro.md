@@ -136,10 +136,10 @@ O workflow engine encadeia operacoes de spec, analise, otimizacao e delegacao pa
 
 | Workflow | Steps | Descricao |
 |----------|-------|-----------|
-| **spec-create** | 4 | Cria spec → refine → analyze risk → sync agents |
+| **spec-create** | 5 | Cria spec → enrich → refine → analyze risk → sync agents |
 | **implement** | 5 | Gate → risk check → sync → delega ao agente → testa |
 | **review** | 3 | Gate → ambiguity check → agente revisa codigo vs spec |
-| **full-cycle** | 8 | Cria → refine → risk → optimize → sync → implementa → testa → review |
+| **full-cycle** | 9 | Cria → enrich → refine → risk → optimize → sync → implementa → testa → review |
 | **verify** | 6 | Risk + ambiguity + readability + entropy + refine |
 | **agent-init** | 3 | Checa memory → sync todos → status |
 
@@ -258,7 +258,7 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 | **Licenca** | MIT |
 | **Stack** | Typer, Rich, RapidFuzz, tiktoken, PyYAML |
 | **Build** | Hatchling |
-| **Testes** | pytest (364 testes) |
+| **Testes** | pytest (377 testes) |
 | **Lint** | Ruff |
 | **Autor** | Becker |
 

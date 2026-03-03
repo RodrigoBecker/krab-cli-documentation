@@ -692,10 +692,10 @@ krab workflow list
 ┌───────────────┬───────┬───────────┬───────────────────────────────────────────────────────────┐
 │ Name          │ Steps │ Type      │ Description                                               │
 ├───────────────┼───────┼───────────┼───────────────────────────────────────────────────────────┤
-│ spec-create   │     4 │ built-in  │ Create a new spec from template, refine, analyze, sync    │
+│ spec-create   │     5 │ built-in  │ Create a new spec from template, enrich, refine, sync     │
 │ implement     │     5 │ built-in  │ Implement a feature from spec: gate, risk, sync, agent    │
 │ review        │     3 │ built-in  │ Review implementation against spec: gate, ambiguity, agent│
-│ full-cycle    │     8 │ built-in  │ Complete SDD lifecycle from spec creation through review   │
+│ full-cycle    │     9 │ built-in  │ Complete SDD lifecycle from spec creation through review   │
 │ verify        │     6 │ built-in  │ Run all quality checks on a spec                          │
 │ agent-init    │     3 │ built-in  │ Initialize agent instruction files from memory             │
 └───────────────┴───────┴───────────┴───────────────────────────────────────────────────────────┘

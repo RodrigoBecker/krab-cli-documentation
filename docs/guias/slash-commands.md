@@ -103,10 +103,10 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Available Workflows
 
-- **spec-create**: Create a new spec from template, refine, analyze risk, and sync agents (4 steps)
+- **spec-create**: Create a new spec from template, enrich, refine, analyze risk, and sync agents (5 steps)
 - **implement**: Implement a feature from spec: gate, risk check, sync, agent delegate, test (5 steps)
 - **review**: Review implementation against spec: gate, ambiguity check, agent review (3 steps)
-- **full-cycle**: Complete SDD lifecycle from spec creation through implementation and review (8 steps)
+- **full-cycle**: Complete SDD lifecycle from spec creation through implementation and review (9 steps)
 - **verify**: Run all quality checks on a spec: risk, ambiguity, readability, entropy, refine (6 steps)
 - **agent-init**: Initialize agent instruction files: check memory, sync all, show status (3 steps)
 
@@ -173,7 +173,14 @@ Implement a feature from spec: gate, risk check, sync, agent delegate, test
    - On failure: continue to next step
 3. **Run**: `krab agent sync all`
    - On failure: continue to next step
-4. **Agent** (default): Implement the feature described in the specification...
+4. **Agent** ({agent}) — **Implement**:
+   > Implement the feature described in the specification. Follow all Gherkin scenarios as acceptance criteria. Create or update tests to match the scenarios.
+
+   **Instructions for the agent:**
+   - Follow the specification above precisely
+   - Implement all Gherkin scenarios as tests
+   - Respect project conventions and constraints
+   - Run existing tests after changes to verify nothing breaks
 5. **Shell**: `uv run pytest`
    - On failure: continue to next step
 
@@ -193,6 +200,10 @@ Run these in the terminal:
 - If the spec contains Gherkin scenarios (Given/When/Then), treat them as acceptance criteria.
 - After completion, summarize what was done and any issues encountered.
 ```
+
+:::info Prompt Completo para Agentes
+Note que o step **Agent** agora inclui o prompt **completo** da tarefa e instrucoes detalhadas por modo de execucao. Isso garante que agentes externos (Copilot, Claude Code) tenham todo o contexto necessario para executar o step corretamente, sem depender do krab workflow runner.
+:::
 
 **Uso no Claude Code:**
 
@@ -328,7 +339,14 @@ Implement a feature from spec: gate, risk check, sync, agent delegate, test
    - On failure: continue to next step
 3. **Run**: `krab agent sync all`
    - On failure: continue to next step
-4. **Agent** (default): Implement the feature described in the specification...
+4. **Agent** ({agent}) — **Implement**:
+   > Implement the feature described in the specification. Follow all Gherkin scenarios as acceptance criteria. Create or update tests to match the scenarios.
+
+   **Instructions for the agent:**
+   - Follow the specification above precisely
+   - Implement all Gherkin scenarios as tests
+   - Respect project conventions and constraints
+   - Run existing tests after changes to verify nothing breaks
 5. **Shell**: `uv run pytest`
    - On failure: continue to next step
 
@@ -384,7 +402,14 @@ description: "Implement a feature from spec: gate, risk check, sync, agent deleg
    - On failure: continue to next step
 3. **Run**: `krab agent sync all`
    - On failure: continue to next step
-4. **Agent** (default): Implement the feature described in the specification...
+4. **Agent** ({agent}) — **Implement**:
+   > Implement the feature described in the specification. Follow all Gherkin scenarios as acceptance criteria. Create or update tests to match the scenarios.
+
+   **Instructions for the agent:**
+   - Follow the specification above precisely
+   - Implement all Gherkin scenarios as tests
+   - Respect project conventions and constraints
+   - Run existing tests after changes to verify nothing breaks
 5. **Shell**: `uv run pytest`
    - On failure: continue to next step
 
@@ -403,6 +428,33 @@ If the spec contains Gherkin scenarios (Given/When/Then), treat them as acceptan
 |-------|-----------|
 | `name` | Nome unico da skill (obrigatorio) |
 | `description` | Descricao que o agente usa para matching contextual (obrigatorio) |
+
+---
+
+## Modo Enrich nos Slash Commands
+
+O workflow `spec-create` e o `full-cycle` incluem um step especial chamado `enrich-spec` que usa o modo `enrich` do Agent Executor. Nos slash commands gerados, este step aparece com instrucoes completas e detalhadas para que o agente externo (Copilot ou Claude Code) saiba exatamente como reescrever a spec.
+
+**Exemplo de step enrich no slash command gerado:**
+
+```markdown
+2. **Agent** ({agent}) — **Enrich spec** (rewrite in-place):
+   > Leia o arquivo .sdd/specs/spec.task.{spec}.md que acabou de ser criado.
+   > Ele contem um template com placeholders genericos. Reescreva o arquivo
+   > IN-PLACE substituindo TODOS os placeholders com conteudo real e especifico
+   > para a feature '{spec}'.
+
+   **Enrich rules for the agent:**
+   - Read the spec file indicated above
+   - Rewrite the file **IN-PLACE**, keeping the heading structure
+   - Replace **ALL** placeholders (`<!-- ... -->`, `<tipo de usuario>`, `<acao desejada>`, etc.) with real, specific content
+   - Use the project context (tech_stack, conventions) to generate relevant content
+   - Write concrete Gherkin scenarios for the described feature
+   - Generate real acceptance criteria and relevant technical notes
+   - Write in **pt-BR**
+```
+
+O prefixo interno `[mode:enrich]` e automaticamente removido e substituido por instrucoes legiveis e detalhadas. Isso garante que qualquer agente de IA consiga executar o step de enriquecimento sem depender do workflow runner do Krab.
 
 ---
 

@@ -21,7 +21,7 @@ Este documento detalha a arquitetura interna do Krab CLI: estrutura de diretorio
 | YAML | PyYAML | >= 6.0.1 | Serializacao de workflows e configuracoes |
 | CLI Base | Click | >= 8.1.0 | Dependencia do Typer |
 | Build System | Hatchling | — | Build backend para pyproject.toml |
-| Testes | pytest | — | Framework de testes (20 arquivos, 364 testes) |
+| Testes | pytest | — | Framework de testes (20 arquivos, 377 testes) |
 | Linter/Formatter | Ruff | — | Check + format (target Python 3.11) |
 
 ---
@@ -628,7 +628,7 @@ AgentContext(project_name, tech_stack, conventions, spec_files, commands, ...)
 
 ## Estrutura de Testes
 
-**20 arquivos de teste** com **364 testes** no total:
+**20 arquivos de teste** com **377 testes** no total:
 
 ```
 tests/
