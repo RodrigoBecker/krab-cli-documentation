@@ -11,37 +11,37 @@ O Krab CLI implementa **25 algoritmos** distribuidos em 6 categorias. Todos sao 
 
 ## Tabela Resumo
 
-| # | Algoritmo | Modulo | Categoria | Funcao Principal |
+| # | Algoritmo | Modulo | Categoria | Funcao principal |
 |---|-----------|--------|-----------|------------------|
-| 1 | Huffman-inspired Aliases | `core/huffman.py` | Compression | Aliases curtos para termos frequentes |
-| 2 | Fuzzy Matching | `core/fuzzy.py` | Similarity | Matching robusto com RapidFuzz |
-| 3 | Jaccard Similarity | `core/similarity.py` | Similarity | Intersecao / uniao de conjuntos |
-| 4 | Cosine Similarity TF | `core/similarity.py` | Similarity | Vetores de frequencia de termos |
-| 5 | N-gram Overlap | `core/similarity.py` | Similarity | Similaridade estrutural por bigrams |
-| 6 | TF-IDF Cosine | `core/similarity.py` | Similarity | Similaridade ponderada por corpus |
-| 7 | Context Quality Score | `core/similarity.py` | Similarity | Densidade + utilizacao de contexto |
-| 8 | Shannon Entropy | `core/entropy.py` | Information Theory | H(X) = -sum(p*log2(p)) |
-| 9 | Markov Chain | `core/entropy.py` | Information Theory | Probabilidade de transicao |
-| 10 | Perplexity | `core/entropy.py` | Information Theory | 2^H, medida de surpresa |
-| 11 | Flesch-Kincaid / Gunning Fog | `core/readability.py` | Readability | Nivel escolar e indice de neblina |
-| 12 | Coleman-Liau / ARI | `core/readability.py` | Readability | Indices baseados em caracteres |
-| 13 | Ambiguity Detector | `core/ambiguity.py` | Readability | Dicionario de termos vagos |
-| 14 | Suffix Array + LCP | `core/substrings.py` | Compression | Substrings repetidas exatas |
-| 15 | N-gram Phrase Counter | `core/substrings.py` | Compression | Frases repetidas por contagem |
-| 16 | 0/1 Knapsack | `core/budget.py` | Optimization | Selecao otima dentro de budget |
-| 17 | MinHash + LSH | `core/minhash.py` | Search | Duplicatas em escala O(n) |
-| 18 | BM25 Ranking | `core/bm25.py` | Search | Ranking de relevancia |
-| 19 | Delta Encoding | `core/delta.py` | Compression | Diff minimo entre versoes |
-| 20 | Dependency Graph | `core/depgraph.py` | Optimization | Grafo de dependencias entre specs |
-| 21 | Chunking Analyzer | `core/chunking.py` | Optimization | Comparacao de estrategias de split |
-| 22 | RAKE | `core/semantic.py` | Compression | Extracao de keywords |
-| 23 | TextRank | `core/semantic.py` | Compression | Sentencas mais importantes |
-| 24 | Semantic Compression | `core/semantic.py` | Compression | Compressao preservando significado |
-| 25 | Hallucination Risk Score | `core/risk.py` | Readability | 6 fatores ponderados |
+| 1 | Huffman-inspired Aliases | `core/huffman.py` | Compressao | Aliases curtos para termos frequentes |
+| 2 | Fuzzy Matching | `core/fuzzy.py` | Similaridade | Matching robusto com RapidFuzz |
+| 3 | Jaccard Similarity | `core/similarity.py` | Similaridade | Intersecao / uniao de conjuntos |
+| 4 | Cosine Similarity TF | `core/similarity.py` | Similaridade | Vetores de frequencia de termos |
+| 5 | N-gram Overlap | `core/similarity.py` | Similaridade | Similaridade estrutural por bigrams |
+| 6 | TF-IDF Cosine | `core/similarity.py` | Similaridade | Similaridade ponderada por corpus |
+| 7 | Context Quality Score | `core/similarity.py` | Similaridade | Densidade + utilizacao de contexto |
+| 8 | Shannon Entropy | `core/entropy.py` | Teoria da Informacao | H(X) = -sum(p*log2(p)) |
+| 9 | Markov Chain | `core/entropy.py` | Teoria da Informacao | Probabilidade de transicao |
+| 10 | Perplexity | `core/entropy.py` | Teoria da Informacao | 2^H, medida de surpresa |
+| 11 | Flesch-Kincaid / Gunning Fog | `core/readability.py` | Legibilidade | Nivel escolar e indice de neblina |
+| 12 | Coleman-Liau / ARI | `core/readability.py` | Legibilidade | Indices baseados em caracteres |
+| 13 | Ambiguity Detector | `core/ambiguity.py` | Legibilidade | Dicionario de termos vagos |
+| 14 | Suffix Array + LCP | `core/substrings.py` | Compressao | Substrings repetidas exatas |
+| 15 | N-gram Phrase Counter | `core/substrings.py` | Compressao | Frases repetidas por contagem |
+| 16 | 0/1 Knapsack | `core/budget.py` | Otimizacao | Selecao otima dentro de budget |
+| 17 | MinHash + LSH | `core/minhash.py` | Busca | Duplicatas em escala O(n) |
+| 18 | BM25 Ranking | `core/bm25.py` | Busca | Ranking de relevancia |
+| 19 | Delta Encoding | `core/delta.py` | Compressao | Diff minimo entre versoes |
+| 20 | Dependency Graph | `core/depgraph.py` | Otimizacao | Grafo de dependencias entre specs |
+| 21 | Chunking Analyzer | `core/chunking.py` | Otimizacao | Comparacao de estrategias de split |
+| 22 | RAKE | `core/semantic.py` | Compressao | Extracao de keywords |
+| 23 | TextRank | `core/semantic.py` | Compressao | Sentencas mais importantes |
+| 24 | Semantic Compression | `core/semantic.py` | Compressao | Compressao preservando significado |
+| 25 | Hallucination Risk Score | `core/risk.py` | Legibilidade | 6 fatores ponderados |
 
 ---
 
-## Compression
+## Compressao
 
 ### 1. Huffman-inspired Aliases
 
@@ -228,7 +228,7 @@ result = semantic_compress(spec_text, target_ratio=0.3)
 
 ---
 
-## Similarity
+## Similaridade
 
 ### 2. Fuzzy Matching
 
@@ -352,7 +352,7 @@ Avalia o quao bem uma spec utiliza a **janela de contexto** de um agente de IA.
 
 ---
 
-## Information Theory
+## Teoria da Informacao
 
 ### 8. Shannon Entropy
 
@@ -432,7 +432,7 @@ Onde H e a cross-entropy estimada via modelo n-gram.
 
 ---
 
-## Readability
+## Legibilidade
 
 ### 11. Flesch-Kincaid / Gunning Fog
 
@@ -536,8 +536,8 @@ overall_score = Σ (factor.score × factor.weight) × 100
 
 **Niveis de risco:**
 
-| Score | Nivel | Safe for Agents? |
-|-------|-------|-----------------|
+| Score | Nivel | Seguro para Agentes? |
+|-------|-------|----------------------|
 | < 20 | LOW | Sim |
 | 20-39 | MODERATE | Sim |
 | 40-59 | HIGH | Nao |
@@ -545,7 +545,7 @@ overall_score = Σ (factor.score × factor.weight) × 100
 
 ---
 
-## Search
+## Busca
 
 ### 17. MinHash + LSH
 
@@ -606,7 +606,7 @@ Onde:
 
 ---
 
-## Optimization
+## Otimizacao
 
 ### 16. 0/1 Knapsack
 

@@ -230,7 +230,7 @@ source ~/.bashrc   # ou ~/.zshrc
 
 ---
 
-## Shell Completion
+## Completacao de Shell
 
 O Krab CLI e construido com [Typer](https://typer.tiangolo.com/), que suporta auto-complete nativo para **Bash**, **Zsh** e **Fish**.
 
@@ -280,7 +280,7 @@ Com shell completion ativado, voce nao precisa decorar os 48 comandos. Basta dig
 
 ---
 
-## Troubleshooting
+## Solucao de Problemas
 
 ### Erro: `command not found: krab`
 
@@ -404,4 +404,4 @@ pip install -e .
 
 ## Proximos Passos
 
-Agora que o Krab CLI esta instalado, siga para o [Quick Start](./quick-start) para criar seu primeiro projeto SDD do zero.
+Agora que o Krab CLI esta instalado, siga para o [Inicio Rapido](./quick-start) para criar seu primeiro projeto SDD do zero.

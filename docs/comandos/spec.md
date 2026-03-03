@@ -534,18 +534,19 @@ krab spec list
 ```
 ╭──────────────────────────────────────╮
 │  Spec Templates                      │
-│  Available templates                 │
+│  Templates disponiveis               │
 ╰──────────────────────────────────────╯
 
 ┌────────────────────┬────────────────────────────────────────┬──────────────────────────────────────────────────────────┐
-│ Type               │ Command                                │ Description                                              │
+│ Tipo               │ Comando                                │ Descricao                                                │
 ├────────────────────┼────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-│ spec.architecture  │ krab spec new architecture -n "nome"   │ Architecture spec with Mermaid diagrams, C4 model, ADRs  │
-│ spec.plan          │ krab spec new plan -n "nome"           │ Implementation plan referencing skills + architecture     │
-│ spec.refining      │ krab spec new refining -n "nome"       │ Tree-of-Thought spec refinement with structured          │
-│                    │                                        │ questioning                                              │
-│ spec.skill         │ krab spec new skill -n "nome"          │ Project skills, capabilities, patterns, and conventions  │
-│ spec.task          │ krab spec new task -n "nome"           │ Feature/task spec with Gherkin BDD scenarios             │
+│ spec.architecture  │ krab spec new architecture -n "nome"   │ Spec de arquitetura com diagramas Mermaid, modelo C4,    │
+│                    │                                        │ ADRs                                                     │
+│ spec.plan          │ krab spec new plan -n "nome"           │ Plano de implementacao referenciando skills + arquitetura │
+│ spec.refining      │ krab spec new refining -n "nome"       │ Refinamento de spec Tree-of-Thought com questionamento   │
+│                    │                                        │ estruturado                                              │
+│ spec.skill         │ krab spec new skill -n "nome"          │ Skills, capacidades, padroes e convencoes do projeto     │
+│ spec.task          │ krab spec new task -n "nome"           │ Spec de feature/tarefa com cenarios BDD Gherkin          │
 │                    │                                        │ (Given/When/Then)                                        │
 └────────────────────┴────────────────────────────────────────┴──────────────────────────────────────────────────────────┘
 ```

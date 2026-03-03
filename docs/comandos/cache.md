@@ -18,7 +18,7 @@ O comando `krab cache` gerencia o cache de resultados de analise do Krab CLI. O 
 
 ## Como o Cache Funciona
 
-### Storage
+### Armazenamento
 
 O cache e armazenado no diretorio `.sdd/cache/`, dentro da estrutura de memoria do projeto. Cada entrada e um arquivo JSON individual:
 
@@ -57,7 +57,7 @@ O cache e invalidado automaticamente quando o conteudo do arquivo muda. Como a c
 
 Alem disso, cada entrada armazenada contem o `_content_hash` original. No momento da leitura, o Krab verifica se o hash corresponde ao conteudo atual. Se houver divergencia (cenario de colisao de hash extremamente improvavel), a entrada e descartada automaticamente.
 
-### Atomic Writes
+### Escritas Atomicas
 
 Para evitar corrupcao de dados (por exemplo, se o processo for interrompido durante a escrita), o cache usa **atomic writes**: os dados sao escritos em um arquivo temporario (via `tempfile.mkstemp`) e depois renomeados para o arquivo final com `Path.replace()`. Em sistemas POSIX, rename e uma operacao atomica — garantindo que o arquivo de cache nunca esta em estado parcial.
 
@@ -203,7 +203,7 @@ A tabela abaixo mostra a diferenca de tempo entre cache miss (primeira execucao,
 Os tempos acima sao aproximados e variam de acordo com o tamanho do arquivo, hardware e carga do sistema. Medidos em um arquivo de spec com ~2.000 palavras em uma maquina com SSD NVMe.
 :::
 
-### Batch Mode (10 Arquivos)
+### Modo Batch (10 Arquivos)
 
 | Cenario | Tempo Total | Tempo Medio/Arquivo |
 |---|---|---|

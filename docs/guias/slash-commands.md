@@ -48,7 +48,7 @@ krab agent sync all --no-commands
 
 ---
 
-## Claude Code Commands
+## Comandos do Claude Code
 
 ### Localizacao
 

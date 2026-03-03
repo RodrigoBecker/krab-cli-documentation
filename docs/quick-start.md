@@ -1,9 +1,9 @@
 ---
 sidebar_position: 3
-title: Quick Start
+title: Inicio Rapido
 ---
 
-# Quick Start
+# Inicio Rapido
 
 Este tutorial guia voce do zero ao primeiro workflow SDD completo. Ao final, voce tera:
 
@@ -258,7 +258,7 @@ krab spec list
 
 ```
 ┌────────────────────┬────────────────────────────────────┬──────────────────────────────────────────┐
-│ Type               │ Command                            │ Description                              │
+│ Tipo               │ Comando                            │ Descricao                                │
 ├────────────────────┼────────────────────────────────────┼──────────────────────────────────────────┤
 │ spec.task          │ krab spec new task -n "nome"       │ Spec de tarefa/feature com Gherkin       │
 │ spec.architecture  │ krab spec new architecture -n "..."│ Spec de arquitetura com C4, ADRs         │
@@ -690,14 +690,15 @@ krab workflow list
 
 ```
 ┌───────────────┬───────┬───────────┬───────────────────────────────────────────────────────────┐
-│ Name          │ Steps │ Type      │ Description                                               │
+│ Nome          │ Steps │ Tipo      │ Descricao                                                 │
 ├───────────────┼───────┼───────────┼───────────────────────────────────────────────────────────┤
-│ spec-create   │     5 │ built-in  │ Create a new spec from template, enrich, refine, sync     │
-│ implement     │     5 │ built-in  │ Implement a feature from spec: gate, risk, sync, agent    │
-│ review        │     3 │ built-in  │ Review implementation against spec: gate, ambiguity, agent│
-│ full-cycle    │     9 │ built-in  │ Complete SDD lifecycle from spec creation through review   │
-│ verify        │     6 │ built-in  │ Run all quality checks on a spec                          │
-│ agent-init    │     3 │ built-in  │ Initialize agent instruction files from memory             │
+│ spec-create   │     5 │ built-in  │ Cria spec a partir de template, enriquece, refina, sync   │
+│ implement     │     5 │ built-in  │ Implementa feature a partir de spec: gate, risco, agente  │
+│ review        │     3 │ built-in  │ Revisa implementacao contra spec: gate, ambiguidade,      │
+│               │       │           │ agente                                                    │
+│ full-cycle    │     9 │ built-in  │ Ciclo SDD completo desde criacao de spec ate revisao      │
+│ verify        │     6 │ built-in  │ Executa todas as verificacoes de qualidade na spec        │
+│ agent-init    │     3 │ built-in  │ Inicializa arquivos de instrucao a partir da memoria      │
 └───────────────┴───────┴───────────┴───────────────────────────────────────────────────────────┘
 ```
 
@@ -710,10 +711,10 @@ krab workflow show full-cycle
 **Saida esperada:**
 
 ```
-╭─ Workflow: full-cycle ─── Complete SDD lifecycle ─╮
+╭─ Workflow: full-cycle ─── Ciclo SDD completo ─────╮
 
 ┌───┬─────────────────┬────────┬───────────────────────────────────────────────┬──────────┐
-│ # │ Step            │ Type   │ Command / Prompt                              │ On Fail  │
+│ # │ Step            │ Tipo   │ Comando / Prompt                              │ Em Falha │
 ├───┼─────────────────┼────────┼───────────────────────────────────────────────┼──────────┤
 │ 1 │ create-spec     │ krab   │ spec new task -n "{spec}"                    │ stop     │
 │ 2 │ refine-spec     │ krab   │ spec refine spec.task.{spec}.md              │ stop     │
@@ -725,7 +726,7 @@ krab workflow show full-cycle
 │ 8 │ review          │ agent  │ Review the implementation against the spec...│ continue │
 └───┴─────────────────┴────────┴───────────────────────────────────────────────┴──────────┘
 
-Default agent: claude
+Agente padrao: claude
 ```
 
 ---
@@ -866,7 +867,7 @@ krab workflow run implement --spec spec.task.carrinho-de-compras.md --agent clau
 
 ## Proximos Passos
 
-Agora que voce completou o Quick Start, explore estas areas:
+Agora que voce completou o Inicio Rapido, explore estas areas:
 
 - **Importar specs** — Importe specs de repositorios Git remotos com `krab spec import`
 - **Spec registry** — Salve aliases de repos com `krab spec registry add` para reutilizar

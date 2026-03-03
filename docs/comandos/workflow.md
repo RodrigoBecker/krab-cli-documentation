@@ -14,16 +14,16 @@ krab workflow --help
 ```
 Usage: krab workflow [OPTIONS] COMMAND [ARGS]...
 
-  Run multi-step SDD workflows (spec-create, implement, review, full-cycle)
+  Executa workflows SDD multi-step (spec-create, implement, review, full-cycle)
 
 Commands:
-  list          List all available workflows (built-in + custom).
-  show          Show the steps of a specific workflow.
-  run           Execute a workflow pipeline.
-  new           Create a new custom workflow YAML template.
-  export        Export a built-in workflow as YAML to stdout.
-  agents-check  Check which AI agent CLIs are installed and available.
-  commands      Generate native slash commands for AI agents from krab workflows.
+  list          Lista todos os workflows disponiveis (built-in + custom).
+  show          Mostra os steps de um workflow especifico.
+  run           Executa um workflow pipeline.
+  new           Cria um novo template YAML de workflow customizado.
+  export        Exporta um workflow built-in como YAML para stdout.
+  agents-check  Verifica quais CLIs de agentes IA estao instalados e disponiveis.
+  commands      Gera slash commands nativos para agentes IA a partir dos workflows krab.
 ```
 
 ---
@@ -198,10 +198,10 @@ O Agent Executor suporta dois modos que alteram as instrucoes finais do prompt:
 #### Modo `implement` (padrao)
 
 Instrucoes geradas:
-- Follow the specification above precisely
-- Implement all Gherkin scenarios as tests
-- Respect project conventions and constraints
-- Run existing tests after changes to verify nothing breaks
+- Siga a especificacao acima com precisao
+- Implemente todos os cenarios Gherkin como testes
+- Respeite as convencoes e constraints do projeto
+- Execute os testes existentes apos as mudancas para verificar que nada quebrou
 
 #### Modo `enrich`
 
@@ -272,15 +272,18 @@ krab workflow list
 ╭─ Workflows — Built-in + custom ─────────────────────────────────────────╮
 
 ┌─────────────┬───────┬──────────┬────────────────────────────────────────────────────────┐
-│ Name        │ Steps │ Type     │ Description                                            │
+│ Nome        │ Steps │ Tipo     │ Descricao                                              │
 ├─────────────┼───────┼──────────┼────────────────────────────────────────────────────────┤
-│ agent-init  │     3 │ built-in │ Initialize agent instruction files: check memory, sync │
-│ full-cycle  │     9 │ built-in │ Complete SDD lifecycle from spec creation through impl  │
-│ implement   │     5 │ built-in │ Implement a feature from spec: gate, risk check, sync   │
-│ review      │     3 │ built-in │ Review implementation against spec: gate, ambiguity ch   │
-│ spec-create │     5 │ built-in │ Create a new spec from template, enrich, refine, risk   │
-│ verify      │     6 │ built-in │ Run all quality checks on a spec: risk, ambiguity, rea  │
-│ deploy-prep │     4 │ custom   │ Pre-deploy validation pipeline                          │
+│ agent-init  │     3 │ built-in │ Inicializa arquivos de instrucao de agentes: memory,   │
+│             │       │          │ sync                                                   │
+│ full-cycle  │     9 │ built-in │ Ciclo SDD completo desde criacao de spec ate impl      │
+│ implement   │     5 │ built-in │ Implementa feature a partir de spec: gate, risco, sync │
+│ review      │     3 │ built-in │ Revisa implementacao contra a spec: gate, ambiguidade  │
+│ spec-create │     5 │ built-in │ Cria spec a partir de template, enriquece, refina,     │
+│             │       │          │ risco                                                  │
+│ verify      │     6 │ built-in │ Executa todas as verificacoes de qualidade: risco,      │
+│             │       │          │ ambiguidade, legibilidade                               │
+│ deploy-prep │     4 │ custom   │ Pipeline de validacao pre-deploy                        │
 └─────────────┴───────┴──────────┴────────────────────────────────────────────────────────┘
 ```
 
@@ -309,10 +312,10 @@ krab workflow show implement
 ```
 
 ```
-╭─ Workflow: implement — Implement a feature from spec ────────────────────╮
+╭─ Workflow: implement — Implementar feature a partir de spec ─────────────╮
 
 ┌───┬───────────────────┬────────┬────────────────────────────────────────────────────────┬──────────┐
-│ # │ Step              │ Type   │ Command / Prompt                                       │ On Fail  │
+│ # │ Step              │ Tipo   │ Comando / Prompt                                       │ Em Falha │
 ├───┼───────────────────┼────────┼────────────────────────────────────────────────────────┼──────────┤
 │ 1 │ check-spec-exists │ gate   │ file_exists:{spec}                                     │ stop     │
 │ 2 │ risk-check        │ krab   │ analyze risk {spec}                                    │ continue │
@@ -321,7 +324,7 @@ krab workflow show implement
 │ 5 │ run-tests         │ shell  │ uv run pytest                                          │ continue │
 └───┴───────────────────┴────────┴────────────────────────────────────────────────────────┴──────────┘
 
-Default agent: claude
+Agente padrao: claude
 ```
 
 **Exemplo: full-cycle**
@@ -331,10 +334,10 @@ krab workflow show full-cycle
 ```
 
 ```
-╭─ Workflow: full-cycle — Complete SDD lifecycle ──────────────────────────╮
+╭─ Workflow: full-cycle — Ciclo SDD completo ──────────────────────────────╮
 
 ┌───┬────────────────┬────────┬────────────────────────────────────────────────────────┬──────────┐
-│ # │ Step           │ Type   │ Command / Prompt                                       │ On Fail  │
+│ # │ Step           │ Tipo   │ Comando / Prompt                                       │ Em Falha │
 ├───┼────────────────┼────────┼────────────────────────────────────────────────────────┼──────────┤
 │ 1 │ create-spec    │ krab   │ spec new task -n "{spec}"                              │ stop     │
 │ 2 │ enrich-spec    │ agent  │ [enrich] Rewrite spec with real content                │ stop     │
@@ -347,7 +350,7 @@ krab workflow show full-cycle
 │ 9 │ review         │ agent  │ Review the implementation against the specificati...    │ continue │
 └───┴────────────────┴────────┴────────────────────────────────────────────────────────┴──────────┘
 
-Default agent: claude
+Agente padrao: claude
 ```
 
 ---
@@ -386,7 +389,7 @@ krab workflow run implement --spec spec.task.auth.md --dry-run
   OK  delegate-to-agent: [dry-run] Would delegate to claude: Implement the feature described...
   OK  run-tests: [dry-run] Would run: uv run pytest
 
-  Workflow 'implement' completed: 5 passed, 0 skipped
+  Workflow 'implement' concluido: 5 aprovados, 0 ignorados
 ```
 
 Cada tipo de step mostra uma mensagem diferente no dry-run:
@@ -424,7 +427,7 @@ krab workflow run implement --spec spec.task.auth.md --agent claude
   OK    delegate-to-agent: <saida do claude code>
   FAIL  run-tests: 2 tests failed
 
-  Workflow 'implement' completed: 4 passed, 0 skipped
+  Workflow 'implement' concluido: 4 aprovados, 0 ignorados
 ```
 
 #### Exemplo: Verificar Qualidade de uma Spec
@@ -443,7 +446,7 @@ krab workflow run verify --spec spec.task.payments.md
   OK  entropy-analysis: done
   OK  generate-refinement: done
 
-  Workflow 'verify' completed: 6 passed, 0 skipped
+  Workflow 'verify' concluido: 6 aprovados, 0 ignorados
 ```
 
 #### Exemplo: Ciclo Completo
@@ -478,8 +481,8 @@ krab workflow new deploy-prep -d "Pre-deploy validation pipeline"
 ```
 
 ```
-  Created workflow template: .sdd/workflows/deploy-prep.yaml
-  Edit the YAML file to customize the workflow steps.
+  Template de workflow criado: .sdd/workflows/deploy-prep.yaml
+  Edite o arquivo YAML para customizar os steps do workflow.
 ```
 
 **Arquivo gerado** (`.sdd/workflows/deploy-prep.yaml`):
@@ -642,21 +645,21 @@ krab workflow agents-check
 **Saida exemplo:**
 
 ```
-╭─ Agent Availability — CLI tools in PATH ─────────────────────────────────╮
+╭─ Disponibilidade de Agentes — CLIs no PATH ──────────────────────────────╮
 
 ┌────────────────────┬──────────┬────────────┬───────────────────────────────────────────────────────┐
-│ Agent              │ Command  │ Status     │ Description                                           │
+│ Agente             │ Comando  │ Status     │ Descricao                                             │
 ├────────────────────┼──────────┼────────────┼───────────────────────────────────────────────────────┤
-│ Claude Code        │ claude   │ installed  │ Anthropic's Claude Code CLI — interactive coding agent │
-│ OpenAI Codex CLI   │ codex    │ not found  │ OpenAI Codex CLI — autonomous coding agent             │
-│ GitHub Copilot     │ gh       │ installed  │ GitHub Copilot — delegates via gh issue with copilot   │
+│ Claude Code        │ claude   │ instalado  │ Claude Code CLI da Anthropic — agente interativo       │
+│ OpenAI Codex CLI   │ codex    │ nao encontrado │ OpenAI Codex CLI — agente autonomo de codificacao │
+│ GitHub Copilot     │ gh       │ instalado  │ GitHub Copilot — delega via gh issue com copilot       │
 └────────────────────┴──────────┴────────────┴───────────────────────────────────────────────────────┘
 ```
 
 A coluna **Status** indica:
 
-- `installed` (verde) — CLI encontrado no PATH, pronto para uso
-- `not found` (vermelho) — CLI nao encontrado, instale antes de usar
+- `instalado` (verde) — CLI encontrado no PATH, pronto para uso
+- `nao encontrado` (vermelho) — CLI nao encontrado, instale antes de usar
 
 ---
 
@@ -684,7 +687,7 @@ krab workflow commands --preview
 ```
 
 ```
-╭─ Workflow Commands — Preview (no files written) ─────────────────────────╮
+╭─ Workflow Commands — Preview (nenhum arquivo escrito) ────────────────────╮
 
 ╭─ [claude] .claude/commands/krab.md ──────────────────────────────────────╮
 │ ---                                                                      │
@@ -704,7 +707,7 @@ krab workflow commands --preview
 
 ... (mais arquivos)
 
-  Would generate 20 file(s)
+  Seriam gerados 20 arquivo(s)
 ```
 
 #### Gerar Slash Commands
@@ -714,7 +717,7 @@ krab workflow commands
 ```
 
 ```
-╭─ Workflow Commands — Generating native slash commands ───────────────────╮
+╭─ Workflow Commands — Gerando slash commands nativos ─────────────────────╮
 
   [claude]  .claude/commands/krab.md
   [claude]  .claude/commands/krab-spec-create.md
@@ -736,7 +739,7 @@ krab workflow commands
   [copilot] .github/skills/krab-full-cycle/SKILL.md
   [copilot] .github/skills/krab-verify/SKILL.md
   [copilot] .github/skills/krab-agent-init/SKILL.md
-  Generated 20 slash command file(s)
+  Gerados 20 arquivo(s) de slash command
 ```
 
 #### Limpar Arquivos Gerados
@@ -746,12 +749,12 @@ krab workflow commands --clean
 ```
 
 ```
-╭─ Workflow Commands — Cleaning generated files ───────────────────────────╮
+╭─ Workflow Commands — Removendo arquivos gerados ─────────────────────────╮
 
-  Removed: .claude/commands/krab.md
-  Removed: .claude/commands/krab-implement.md
+  Removido: .claude/commands/krab.md
+  Removido: .claude/commands/krab-implement.md
   ... (todos os arquivos krab*)
-  Cleaned 20 file(s)
+  Removidos 20 arquivo(s)
 ```
 
 #### Filtrar por Agente ou Workflow

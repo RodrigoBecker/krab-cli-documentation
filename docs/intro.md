@@ -85,7 +85,7 @@ Agentes de IA tem uma janela de contexto limitada. Cada token conta. Uma spec va
 
 ---
 
-## Features Principais
+## Funcionalidades Principais
 
 ### 25 Algoritmos de Analise e Otimizacao
 
@@ -223,9 +223,9 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 
 ---
 
-## Features at a Glance
+## Funcionalidades em Resumo
 
-| Feature | Descricao | Exemplo |
+| Funcionalidade | Descricao | Exemplo |
 |---------|-----------|---------|
 | Compressao Huffman | Substitui termos frequentes por aliases curtos | `krab optimize run spec.md` |
 | Deduplicacao Fuzzy | Remove secoes duplicadas/similares | `krab optimize dedup spec.md` |
@@ -268,4 +268,4 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 ## Proximos Passos
 
 - [Instalacao](./instalacao) — Como instalar o Krab CLI
-- [Quick Start](./quick-start) — Tutorial passo a passo do zero ao primeiro workflow
+- [Inicio Rapido](./quick-start) — Tutorial passo a passo do zero ao primeiro workflow

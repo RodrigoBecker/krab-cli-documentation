@@ -280,7 +280,7 @@ def analyze_entropy(file, ...):
 
 **Beneficio**: ao executar `krab optimize run`, os modulos de `entropy.py`, `readability.py`, `bm25.py`, etc. **nunca sao importados**. Apenas `huffman.py`, `fuzzy.py` e `similarity.py` sao carregados.
 
-### Template Imports — Registration on Import
+### Importacao de Templates — Registro na Importacao
 
 Templates usam um pattern diferente — sao importados explicitamente para triggerar o decorator `@register_template`:
 
