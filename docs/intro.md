@@ -119,7 +119,7 @@ O Krab CLI implementa 25 algoritmos especializados em analise de texto, otimizac
 | 24 | **Semantic Compression** | `core/semantic.py` | Compressao semantica preservando conceitos-chave |
 | 25 | **Hallucination Risk Score** | `core/risk.py` | Score combinado de risco de alucinacao do agente |
 
-### 5 Tipos de Template para Geracao de Specs
+### 9 Tipos de Template para Geracao de Specs
 
 | Template | Finalidade | Saida |
 |----------|-----------|-------|
@@ -128,15 +128,20 @@ O Krab CLI implementa 25 algoritmos especializados em analise de texto, otimizac
 | **plan** | Plano de implementacao com fases, Gantt e riscos | `spec.plan.<nome>.md` |
 | **skill** | Definicao de skills/capacidades tecnicas do projeto | `spec.skill.<nome>.md` |
 | **refining** | Refinamento Tree-of-Thought com analise multi-dimensional | `spec.refining.<nome>.md` |
+| **constitution** | Identidade, principios e limites do projeto (global) | `spec.constitution.<nome>.md` |
+| **guardrails** | Quality gates para specs, codigo e seguranca (global) | `spec.guardrails.<nome>.md` |
+| **runbook** | Procedimentos operacionais: deploy, monitoring, ops (global) | `spec.runbook.<nome>.md` |
+| **clarify** | Template de sessao Q&A para enriquecer specs | `spec.clarify.<nome>.md` |
 
-Cada template injeta automaticamente o **contexto do projeto** (tech stack, convencoes, termos de dominio) a partir da memoria persistente em `.sdd/`.
+Cada template injeta automaticamente o **contexto do projeto** (tech stack, convencoes, termos de dominio) a partir da memoria persistente em `.sdd/`. Os templates globais (**constitution**, **guardrails**, **runbook**) sao gerados automaticamente pelo `krab init` e influenciam o refinamento de todas as outras specs.
 
-### Workflow Engine com 6 Pipelines Built-in
+### Workflow Engine com 7 Pipelines Built-in
 
 O workflow engine encadeia operacoes de spec, analise, otimizacao e delegacao para agentes de IA reais:
 
 | Workflow | Steps | Descricao |
 |----------|-------|-----------|
+| **sdd-lifecycle** | 14 | Ciclo completo em 5 fases: Plan → Refining → Task Validation → Implementation → Review |
 | **spec-create** | 5 | Cria spec → enrich → refine → analyze risk → sync agents |
 | **implement** | 5 | Gate → risk check → sync → delega ao agente → testa |
 | **review** | 3 | Gate → ambiguity check → agente revisa codigo vs spec |
@@ -173,11 +178,13 @@ O sistema de memoria persistente armazena contexto do projeto em `.sdd/`:
 
 ```
 .sdd/
-├── memory.json    # Tech stack, convencoes, termos de dominio, constraints
+├── memory.json    # Tech stack, convencoes, termos de dominio, constraints, agente preferido
 ├── skills.json    # Skills/capacidades tecnicas registradas
 ├── history.json   # Historico de geracao de specs
+├── specs/         # Specs do projeto (constitution, guardrails, runbook, tasks, etc.)
+├── archived/      # Specs arquivadas (via krab spec archive)
 ├── cache/         # Cache de resultados de analise (SHA-256)
-└── workflows/     # Workflows customizados (YAML)
+└── workflows/     # Workflows (sdd-lifecycle.yaml + customizados)
 ```
 
 Esse contexto e injetado automaticamente na geracao de specs, instrucoes de agentes e slash commands.
@@ -194,18 +201,19 @@ Resultados de analise (`tokens`, `quality`, `entropy`, `readability`, `freq`) sa
 
 ---
 
-## 48 Comandos em 10 Grupos
+## 53 Comandos em 11 Grupos
 
-O Krab CLI organiza seus comandos em 10 grupos logicos:
+O Krab CLI organiza seus comandos em 11 grupos logicos:
 
 | Grupo | Comandos | Descricao |
 |-------|----------|-----------|
+| **`krab init`** | (wizard interativo) | Inicializacao completa do projeto: agente, memory, specs globais, workflow, slash commands |
 | **`krab optimize`** | `run`, `aliases`, `dedup` | Otimizacao de specs para eficiencia de tokens |
 | **`krab convert`** | `md2json`, `json2md`, `md2yaml`, `yaml2md`, `auto` | Conversao entre Markdown, JSON e YAML |
 | **`krab analyze`** | `tokens`, `quality`, `compare`, `freq`, `entropy`, `readability`, `ambiguity`, `substrings`, `risk`, `chunking`, `keywords`, `batch` | Analise completa de qualidade e metricas |
 | **`krab search`** | `bm25`, `duplicates`, `budget` | Busca, indexacao e otimizacao de budget |
 | **`krab diff`** | `versions`, `sections` | Delta encoding entre versoes de specs |
-| **`krab spec`** | `new`, `refine`, `list`, `import`, `registry` | Geracao, importacao e gerenciamento de specs |
+| **`krab spec`** | `new`, `refine`, `clarify`, `archive`, `delete`, `list`, `import`, `registry` | Geracao, enriquecimento, arquivamento e gerenciamento de specs |
 | **`krab memory`** | `init`, `show`, `set`, `skills`, `add-skill`, `remove-skill`, `history` | Memoria persistente do projeto |
 | **`krab agent`** | `sync`, `preview`, `status`, `diff` | Instrucoes para agentes de IA |
 | **`krab cache`** | `stats`, `clear` | Gerenciamento de cache de analise |
@@ -238,9 +246,12 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 | Near-Duplicates | MinHash + LSH escalavel para grandes corpus | `krab search duplicates ./specs/` |
 | Budget Optimizer | Seleciona specs otimas para um budget de tokens (Knapsack) | `krab search budget ./specs/ --budget 16384` |
 | Delta Encoding | Diff compacto entre versoes de specs | `krab diff versions v1.md v2.md` |
-| Templates SDD | 5 templates com injecao de contexto | `krab spec new task -n "Login"` |
+| Templates SDD | 9 templates com injecao de contexto | `krab spec new task -n "Login"` |
+| Specs Globais | Constitution, GuardRails, Runbook (gerados pelo init) | `krab init` |
+| Clarify Q&A | Sessao interativa de Q&A para enriquecer specs | `krab spec clarify spec.task.login.md` |
+| Archive & Delete | Arquivar e excluir specs com atualizacao de referencias | `krab spec archive spec.task.old.md` |
 | Refinamento Tree-of-Thought | Analise multi-dimensional com plano de melhoria | `krab spec refine spec.task.login.md` |
-| Workflows | Pipelines multi-step com delegacao a agentes | `krab workflow run implement --spec spec.md` |
+| Workflows | 7 pipelines multi-step com delegacao a agentes | `krab workflow run sdd-lifecycle --spec spec.md` |
 | Slash Commands Nativos | Gera comandos no formato de cada agente | `krab workflow commands` |
 | Memoria do Projeto | Contexto persistente em `.sdd/` | `krab memory init` |
 | Analise em Batch | Processa multiplos arquivos de uma vez | `krab analyze batch ./specs/ -a risk` |
@@ -259,7 +270,7 @@ O Krab CLI organiza seus comandos em 10 grupos logicos:
 | **Licenca** | MIT |
 | **Stack** | Typer, Rich, RapidFuzz, tiktoken, PyYAML |
 | **Build** | Hatchling |
-| **Testes** | pytest (407 testes) |
+| **Testes** | pytest (460 testes) |
 | **Lint** | Ruff |
 | **Autor** | Becker |
 

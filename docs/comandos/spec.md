@@ -304,6 +304,70 @@ krab spec new refining -n "Revisao Auth" -d "Template para refinamento da spec d
 
 ---
 
+### Template: `constitution`
+
+Gera uma spec global de identidade do projeto — principios fundamentais, limites, padroes de qualidade e decisoes arquiteturais que guiam todo o desenvolvimento. E gerado automaticamente pelo `krab init`.
+
+**Arquivo de saida**: `spec.constitution.{slug}.md`
+
+**Melhor para**: Definir a identidade do projeto, principios de design e limites que devem ser respeitados por todos os agentes e desenvolvedores.
+
+#### Secoes Geradas
+
+| Secao | Conteudo |
+|-------|----------|
+| **Identidade do Projeto** | Nome, missao, visao, publico-alvo |
+| **Principios Fundamentais** | Regras inviolaveis do projeto (performance, seguranca, etc.) |
+| **Limites e Restricoes** | O que o projeto NAO faz, tecnologias proibidas |
+| **Decisoes Arquiteturais** | ADRs de alto nivel com contexto e consequencias |
+| **Padroes de Qualidade** | Metricas de cobertura, performance, disponibilidade |
+| **Comunicacao** | Idioma do codigo, convencoes de commit, documentacao |
+| **Evolucao** | Como a constitution pode ser atualizada |
+
+---
+
+### Template: `guardrails`
+
+Gera uma spec de quality gates — regras que devem ser validadas em cada etapa do ciclo SDD. Influencia o processo de refinamento de todas as outras specs.
+
+**Arquivo de saida**: `spec.guardrails.{slug}.md`
+
+**Melhor para**: Definir gates de qualidade automaticos, regras de seguranca e checklists de validacao.
+
+#### Secoes Geradas (12 Gates)
+
+| Secao | Gates |
+|-------|-------|
+| **Spec Gates** | Completude estrutural, precisao de linguagem, cobertura de cenarios |
+| **Code Gates** | Cobertura de testes, lint, type checking |
+| **Security Gates** | OWASP Top 10, secrets scanning, dependency audit |
+| **Workflow Gates** | Aprovacao de PR, deploy staging antes de prod |
+| **Agent Gates** | Token budget, context window, hallucination risk |
+
+---
+
+### Template: `runbook`
+
+Gera uma spec operacional com procedimentos de deploy, monitoring, troubleshooting e manutencao.
+
+**Arquivo de saida**: `spec.runbook.{slug}.md`
+
+**Melhor para**: Documentar procedimentos operacionais, runbooks de incidentes, checklists de deploy.
+
+#### Secoes Geradas
+
+| Secao | Conteudo |
+|-------|----------|
+| **Quickstart** | Setup local, dependencias, variaveis de ambiente |
+| **Ambientes** | Tabela de ambientes (dev, staging, prod) com URLs e configs |
+| **Comandos** | Comandos essenciais para build, test, lint, deploy |
+| **Deploy** | Pipeline CI/CD, checklists pre/pos-deploy, rollback |
+| **Monitoring** | Metricas, alertas, dashboards, SLIs/SLOs |
+| **Troubleshooting** | Problemas comuns com diagnostico e solucao |
+| **Manutencao** | Rotinas periodicas, backup, atualizacoes |
+
+---
+
 ## krab spec refine
 
 Analisa uma spec existente utilizando a abordagem **Tree-of-Thought (ToT)** e gera um documento de refinamento com perguntas estruturadas, gaps criticos e ordem sugerida de melhoria.
@@ -509,9 +573,199 @@ krab analyze ambiguity spec.task.feature-x.md
 
 ---
 
+## krab spec clarify
+
+Inicia uma sessao de Q&A interativa para enriquecer uma spec existente com perguntas direcionadas. O sistema gera perguntas categorizadas por tipo (completude, precisao, contexto, testabilidade, operacional) com niveis de prioridade.
+
+### Sintaxe
+
+```bash
+krab spec clarify <file> [-o <output>] [--agent]
+```
+
+### Parametros
+
+| Parametro | Tipo | Obrigatorio | Default | Descricao |
+|-----------|------|-------------|---------|-----------|
+| `file` | `Path` | Sim | — | Spec a ser enriquecida |
+| `-o` / `--output` | `Path` | Nao | `spec.clarify.{stem}.md` | Arquivo de saida |
+| `--agent` | `bool` | Nao | `false` | Modo agente (gera Q&A sem interacao, para uso por agentes de IA) |
+
+### Categorias de Perguntas
+
+| Categoria | Foco |
+|-----------|------|
+| **completeness** | Secoes ausentes, placeholders, cenarios insuficientes |
+| **precision** | Termos vagos, valores concretos, limites nao definidos |
+| **context** | Integracoes, dependencias, impacto em outros modulos |
+| **testability** | Cobertura de cenarios, criterios de aceitacao atomicos |
+| **operational** | Deploy, monitoring, rollback, performance |
+
+### Exemplo
+
+```bash
+krab spec clarify spec.task.checkout-flow.md
+```
+
+```
+╭──────────────────────────────────────────╮
+│  Spec Clarify                            │
+│  spec.task.checkout-flow.md              │
+╰──────────────────────────────────────────╯
+ℹ Perguntas geradas: 12
+
+  [completeness/high] Quais cenarios de erro devem ser cobertos alem do happy path?
+  > (digite sua resposta ou Enter para pular)
+
+  [precision/critical] Qual o timeout maximo aceito para a operacao de pagamento?
+  > 30 segundos
+
+  [testability/medium] Os cenarios Gherkin cobrem fluxos de rollback?
+  > (Enter para pular)
+
+✓ Sessao salva: spec.clarify.checkout-flow.md
+ℹ 8 de 12 perguntas respondidas
+```
+
+---
+
+## krab spec archive
+
+Arquiva specs movendo-as para `.sdd/archived/`. Cria o diretorio automaticamente se nao existir. Atualiza `global_specs` na memory e registra no historico.
+
+### Sintaxe
+
+```bash
+krab spec archive <specs...> [--force/-f]
+```
+
+### Parametros
+
+| Parametro | Tipo | Obrigatorio | Default | Descricao |
+|-----------|------|-------------|---------|-----------|
+| `specs` | `string[]` | Sim | — | Caminhos ou nomes de specs para arquivar |
+| `-f` / `--force` | `bool` | Nao | `false` | Arquivar sem confirmacao |
+
+### Resolucao de Nomes
+
+O comando aceita tres formatos de referencia:
+
+| Formato | Exemplo | Busca |
+|---------|---------|-------|
+| Caminho completo | `.sdd/specs/spec.task.auth.md` | Direto |
+| Nome do arquivo | `spec.task.auth.md` | Em `.sdd/specs/` |
+| Nome curto | `task.auth` | Auto-prefixado: `spec.{nome}.md` em `.sdd/specs/` |
+
+### Exemplo
+
+```bash
+# Arquivar por caminho
+krab spec archive .sdd/specs/spec.task.old-feature.md --force
+
+# Arquivar por nome curto
+krab spec archive task.deprecated-module --force
+
+# Arquivar multiplas specs
+krab spec archive spec.task.a.md spec.task.b.md --force
+```
+
+**Saida:**
+
+```
+╭──────────────────────────────────────╮
+│  Spec Archive  2 spec(s)             │
+╰──────────────────────────────────────╯
+
+┌───┬──────────────────────────┬──────────┐
+│ # │ Spec                     │ Size     │
+├───┼──────────────────────────┼──────────┤
+│ 1 │ spec.task.a.md           │ 2.4 KB   │
+│ 2 │ spec.task.b.md           │ 1.8 KB   │
+└───┴──────────────────────────┴──────────┘
+
+ℹ  spec.task.a.md -> .sdd/archived/spec.task.a.md
+ℹ  spec.task.b.md -> .sdd/archived/spec.task.b.md
+✓ Arquivadas 2 spec(s) em .sdd/archived/
+```
+
+### Conflitos de Nome
+
+Se uma spec com o mesmo nome ja existe em `.sdd/archived/`, o sistema adiciona um sufixo numerico:
+
+```
+spec.task.dup.md     → .sdd/archived/spec.task.dup.md      (ja existia)
+spec.task.dup.md     → .sdd/archived/spec.task.dup.1.md    (novo)
+```
+
+---
+
+## krab spec delete
+
+Exclui uma ou mais specs permanentemente. Busca em `.sdd/specs/` e `.sdd/archived/`. Atualiza `global_specs` e registra no historico.
+
+### Sintaxe
+
+```bash
+krab spec delete <specs...> [--force/-f]
+```
+
+### Parametros
+
+| Parametro | Tipo | Obrigatorio | Default | Descricao |
+|-----------|------|-------------|---------|-----------|
+| `specs` | `string[]` | Sim | — | Caminhos ou nomes de specs para excluir |
+| `-f` / `--force` | `bool` | Nao | `false` | Excluir sem confirmacao |
+
+### Resolucao de Nomes
+
+Mesma logica do `krab spec archive`, com adicao de busca em `.sdd/archived/`:
+
+1. Caminho completo direto
+2. Nome em `.sdd/specs/`
+3. Nome curto com prefixo `spec.` + `.md`
+4. Nome em `.sdd/archived/`
+
+### Exemplo
+
+```bash
+# Excluir spec permanentemente
+krab spec delete spec.task.old-feature.md --force
+
+# Excluir spec arquivada
+krab spec delete spec.task.deprecated.md --force
+
+# Excluir multiplas
+krab spec delete task.a task.b --force
+```
+
+**Saida:**
+
+```
+╭──────────────────────────────────────╮
+│  Spec Delete  2 spec(s)              │
+╰──────────────────────────────────────╯
+
+┌───┬──────────────────────────┬────────────────────┬──────────┐
+│ # │ Spec                     │ Location           │ Size     │
+├───┼──────────────────────────┼────────────────────┼──────────┤
+│ 1 │ spec.task.a.md           │ .sdd/specs         │ 2.4 KB   │
+│ 2 │ spec.task.b.md           │ .sdd/specs         │ 1.8 KB   │
+└───┴──────────────────────────┴────────────────────┴──────────┘
+
+ℹ  Excluida: spec.task.a.md
+ℹ  Excluida: spec.task.b.md
+✓ Excluidas 2 spec(s) permanentemente.
+```
+
+:::warning Operacao Irreversivel
+A exclusao e permanente. Se quiser preservar a spec, use `krab spec archive` antes.
+:::
+
+---
+
 ## krab spec list
 
-Lista todos os templates de spec disponiveis no registry.
+Lista todos os templates de spec disponiveis no registry, incluindo os novos templates globais.
 
 ### Sintaxe
 
@@ -537,18 +791,19 @@ krab spec list
 │  Templates disponiveis               │
 ╰──────────────────────────────────────╯
 
-┌────────────────────┬────────────────────────────────────────┬──────────────────────────────────────────────────────────┐
-│ Tipo               │ Comando                                │ Descricao                                                │
-├────────────────────┼────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-│ spec.architecture  │ krab spec new architecture -n "nome"   │ Spec de arquitetura com diagramas Mermaid, modelo C4,    │
-│                    │                                        │ ADRs                                                     │
-│ spec.plan          │ krab spec new plan -n "nome"           │ Plano de implementacao referenciando skills + arquitetura │
-│ spec.refining      │ krab spec new refining -n "nome"       │ Refinamento de spec Tree-of-Thought com questionamento   │
-│                    │                                        │ estruturado                                              │
-│ spec.skill         │ krab spec new skill -n "nome"          │ Skills, capacidades, padroes e convencoes do projeto     │
-│ spec.task          │ krab spec new task -n "nome"           │ Spec de feature/tarefa com cenarios BDD Gherkin          │
-│                    │                                        │ (Given/When/Then)                                        │
-└────────────────────┴────────────────────────────────────────┴──────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────┬──────────────────────────────────────────────────────────┐
+│ Tipo                │ Comando                                 │ Descricao                                                │
+├─────────────────────┼─────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ spec.architecture   │ krab spec new architecture -n "nome"    │ Spec de arquitetura com diagramas Mermaid, modelo C4     │
+│ spec.clarify        │ krab spec new clarify -n "nome"         │ Template de sessao Q&A para enriquecer specs             │
+│ spec.constitution   │ krab spec new constitution -n "nome"    │ Identidade, principios e limites do projeto              │
+│ spec.guardrails     │ krab spec new guardrails -n "nome"      │ Quality gates para specs, codigo e seguranca             │
+│ spec.plan           │ krab spec new plan -n "nome"            │ Plano de implementacao referenciando skills + arquitetura│
+│ spec.refining       │ krab spec new refining -n "nome"        │ Refinamento Tree-of-Thought com questionamento          │
+│ spec.runbook        │ krab spec new runbook -n "nome"         │ Procedimentos operacionais (deploy, monitoring, ops)     │
+│ spec.skill          │ krab spec new skill -n "nome"           │ Skills, capacidades, padroes e convencoes do projeto     │
+│ spec.task           │ krab spec new task -n "nome"            │ Spec de feature/tarefa com cenarios BDD Gherkin          │
+└─────────────────────┴─────────────────────────────────────────┴──────────────────────────────────────────────────────────┘
 ```
 
 ---

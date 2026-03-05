@@ -28,6 +28,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'guias/slash-commands',
+        'guias/walkthrough',
       ],
     },
     {

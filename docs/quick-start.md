@@ -19,9 +19,24 @@ Certifique-se de que o Krab CLI esta instalado e funcionando. Teste com `krab --
 
 ---
 
-## Passo 1: Inicializar a Memoria do Projeto
+## Passo 1: Inicializar o Projeto
 
-A memoria do projeto e armazenada em `.sdd/` e serve como contexto persistente para tudo que o Krab CLI gera — specs, instrucoes de agentes, slash commands.
+A forma recomendada de iniciar um projeto e usando o wizard interativo `krab init`, que configura tudo em 5 etapas:
+
+```bash
+krab init
+```
+
+O wizard configura: selecao de agente, nome/stack/convencoes, specs globais (constitution, guardrails, runbook), workflow padrao (sdd-lifecycle) e slash commands.
+
+:::tip Inicio rapido sem wizard
+Todas as perguntas podem ser puladas com **Enter** para aceitar os defaults. Para pular completamente:
+```bash
+krab init --skip-wizard --agent claude --name "ecommerce-api"
+```
+:::
+
+Alternativamente, voce pode inicializar apenas a memoria do projeto:
 
 ```bash
 krab memory init -n "ecommerce-api" -d "API REST para e-commerce com pagamentos e carrinho"
@@ -36,6 +51,10 @@ krab memory init -n "ecommerce-api" -d "API REST para e-commerce com pagamentos 
 ✓ Nome: ecommerce-api
 ℹ Use `krab memory set` para configurar stack, convenções, etc.
 ```
+
+:::info Para um walkthrough completo passo a passo
+Veja o guia [Walkthrough End-to-End](./guias/walkthrough) para uma demonstracao detalhada de todas as funcionalidades.
+:::
 
 Isso cria a seguinte estrutura:
 

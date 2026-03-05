@@ -93,16 +93,17 @@ Regra pratica: steps criticos (gates, implementacao) usam `stop`. Steps informat
 
 ### Built-in vs Custom Workflows
 
-O Krab CLI vem com **6 workflows built-in** prontos para uso. Alem disso, voce pode criar **workflows customizados ilimitados** como arquivos YAML em `.sdd/workflows/`.
+O Krab CLI vem com **7 workflows built-in** prontos para uso. Alem disso, voce pode criar **workflows customizados ilimitados** como arquivos YAML em `.sdd/workflows/`.
 
 O engine carrega ambos automaticamente. Workflows customizados podem sobrescrever built-ins (mesmo nome = customizado tem prioridade).
 
 ---
 
-## 6 Workflows Built-in
+## 7 Workflows Built-in
 
 | Workflow | Steps | Descricao |
 |----------|-------|-----------|
+| `sdd-lifecycle` | 14 | **Ciclo SDD completo em 5 fases**: Plan → Refining → Task Validation → Implementation → Review |
 | `spec-create` | 5 | Cria spec via template, enriquece com agente IA, refina com Tree-of-Thought, analisa risco de alucinacao, sincroniza agentes |
 | `implement` | 5 | Gate de existencia -> verifica risco -> sincroniza agentes -> delega implementacao ao agente -> roda testes |
 | `review` | 3 | Gate de existencia -> verifica ambiguidade -> agente revisa codigo contra a spec |
@@ -111,6 +112,51 @@ O engine carrega ambos automaticamente. Workflows customizados podem sobrescreve
 | `agent-init` | 3 | Verifica memory -> sincroniza todos os agentes -> mostra status |
 
 ### Detalhes de Cada Built-in
+
+#### sdd-lifecycle (14 steps — 5 fases)
+
+O workflow padrao criado automaticamente pelo `krab init`. Representa o ciclo completo de Spec-Driven Development em 5 fases:
+
+**Fase 1 — Spec Plan (Steps 1-3)**
+
+1. **gate**: `file_exists:{root}/.sdd/memory.json` — verifica se o projeto esta inicializado
+2. **gate**: `file_exists:{root}/.sdd/specs/spec.constitution.md` — constitution gate
+3. **krab**: `spec new task -n "{spec}"` — cria a spec a partir do template task
+
+**Fase 2 — Spec Refining (Steps 4-6)**
+
+4. **agent** (enrich): Reescreve a spec IN-PLACE substituindo placeholders por conteudo real
+5. **krab**: `spec clarify .sdd/specs/spec.task.{spec}.md` — sessao de Q&A para enriquecer
+6. **krab**: `spec refine .sdd/specs/spec.task.{spec}.md` — refinamento Tree-of-Thought
+
+**Fase 3 — Spec Task Validation (Steps 7-9)**
+
+7. **krab**: `analyze risk .sdd/specs/spec.task.{spec}.md` — analisa risco de alucinacao (continue)
+8. **krab**: `analyze ambiguity .sdd/specs/spec.task.{spec}.md` — detecta termos vagos (continue)
+9. **krab**: `optimize run .sdd/specs/spec.task.{spec}.md` — otimiza tokens (continue)
+
+**Fase 4 — Spec Implementation (Steps 10-12)**
+
+10. **krab**: `agent sync all` — sincroniza arquivos de instrucao (continue)
+11. **agent**: Delega implementacao ao agente seguindo cenarios Gherkin
+12. **shell**: `uv run pytest` — roda testes (continue)
+
+**Fase 5 — Spec Review (Steps 13-14)**
+
+13. **agent**: Revisa implementacao contra a spec (continue)
+14. **krab**: `analyze risk .sdd/specs/spec.task.{spec}.md` — re-analisa risco pos-implementacao (continue)
+
+**Uso:**
+
+```bash
+krab workflow run sdd-lifecycle --spec user-auth --agent claude
+```
+
+:::tip Workflow Padrao
+O `sdd-lifecycle` e o workflow recomendado para novos projetos. Ele cobre o ciclo completo desde a criacao da spec ate a revisao pos-implementacao, incluindo gates de qualidade em cada fase.
+:::
+
+---
 
 #### spec-create (5 steps)
 
